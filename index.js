@@ -116,7 +116,7 @@ class GenericCrudService {
   /**
    * Obtains the document with the given _id
    *
-   * @param {String} _id: The MongoDB Id for the requested Quiz
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested object
    * @param {Object} projection: Used for projection. Defines which fields of the objects must be returned. Useful for optimizing queries.
    */
   async get(_id, projection) {
@@ -133,7 +133,7 @@ class GenericCrudService {
    *
    * Options: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate
    *
-   * @param {Object} _id: The MongoDB Id of the object to be updated
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested object
    * @param {Object} update: MongoDB update operations
    * @param {Object} [options={}]:
    * @param {boolean} [options.returnOriginal=false]:
@@ -168,7 +168,7 @@ class GenericCrudService {
    *
    * Options: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate
    *
-   * @param {Object} _id: The MongoDB Id of the object to be updated
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested object
    * @param {Object} data: The data to be updated
    * @param {Object} [options={}]:
    * @param {boolean} [options.returnOriginal=false]:
@@ -195,9 +195,10 @@ class GenericCrudService {
   }
 
   /**
-   * Soft deletes a document
+   * Deletes a document
    *
-   * @param {Object} document: JSON document to be stored in MongoDB
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested object
+   * @param {Object} [options={}]:
    */
   async remove(_id, options = {}) {
     this.verifyConnection();
