@@ -1,6 +1,6 @@
 const chai = require("chai"),
   chaiAsPromised = require("chai-as-promised"),
-  GenericCrudService = require("../index"),
+  GenericCrudService = require("../GenericCrudService"),
   { MongoClient } = require("mongodb"),
   uri = "mongodb://localhost:27017",
   data = require("./data"),
@@ -182,7 +182,7 @@ describe("GenericCrudService", () => {
       const newCount = await service.count();
       object.should.haveOwnProperty("_id");
       object.should.haveOwnProperty("name");
-      object.should.haveOwnProperty("createdAt");
+      object.should.haveOwnProperty(service.creationDateField);
       newCount.should.be.eql(oldCount + 1);
     });
   });
@@ -295,7 +295,7 @@ describe("GenericCrudService", () => {
           type: "ugly"
         });
         object.should.haveOwnProperty("type");
-        object.should.haveOwnProperty("lastModifiedAt");
+        object.should.haveOwnProperty(service.modificationDateField);
         object._id.should.be.eql(originalObject._id);
         object.name.should.be.eql(originalObject.name);
       });

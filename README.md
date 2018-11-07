@@ -18,9 +18,9 @@ Main implementation class.
 
 **Parameters**:
 
-- **client:** A MongoClient instance from the NodeJS MongoDB driver. Can be already connected or not when initializing, but it has to be connected when performing any operations.
-- **databaseName:** The database name
-- **collectionName:** The collection name
+- **{MongoClient} client:** A MongoClient instance from the NodeJS MongoDB driver. Can be already connected or not when initializing, but it has to be connected when performing any operations.
+- **{String} databaseName:** The database name
+- **{String} collectionName:** The collection name
 
 ## **Methods**
 
@@ -147,9 +147,9 @@ cats.service.js
 ```javascript
 const { database, collections } = require("../config/mongodb"),
   mongodb = require("../utils/mongodb"),
-  AuditedCrudService = require("./AuditedCrud");
+  { GenericCrudService } = require("generic-mongodb-services");
 
-module.exports = new AuditedCrudService(mongodb.client, database, "cats");
+module.exports = new GenericCrudService(mongodb.client, database, "cats");
 ```
 
 cats.routes.js
@@ -160,4 +160,28 @@ const catService = require("./cats.service");
 async function method(query, limit, skip, sort, projection) {
   return await catService.list(query, limit, skip, sort, projection);
 }
+```
+
+## **AuditedCrud**
+
+A subclass of the GenericCrudService that stores audit registers in write operations (create, patch, update). Takes the same parameters a GenericCrudService and an additional one. Also, all operations recieve a optional user parameters that will be stored in the database
+
+**Parameters**:
+
+- **{String} [auditCollectionName='audits']:** The name of the collection where the audits will be stored
+
+## **¿Need to add operations? ¡No problem!**
+
+Just subclass one the desired classes and add more operations to the class
+
+```javascript
+const { database, collections } = require("../config/mongodb"),
+  mongodb = require("../utils/mongodb"),
+  { GenericCrudService } = require("generic-mongodb-services");
+
+class CustomCatService extends GenericCrudService {
+  customMethod() {}
+}
+
+module.exports = new CustomCatService(mongodb.client, database, "cats");
 ```
