@@ -1,8 +1,8 @@
-let chai = require("chai"),
+const chai = require("chai"),
   chaiAsPromised = require("chai-as-promised"),
   GenericCrudService = require("../index"),
-  { MongoClient } = require("mongodb");
-const uri = "mongodb://localhost:27017",
+  { MongoClient } = require("mongodb"),
+  uri = "mongodb://localhost:27017",
   data = require("./data"),
   databaseName = "test",
   collectionName = "cats",
@@ -12,10 +12,13 @@ const uri = "mongodb://localhost:27017",
   client = new MongoClient(uri, clientOptions),
   ClientNotConnected = require("../exceptions/ClientNotConnected"),
   validId = "5be1c07f21fd86540546eb53",
-  service = new GenericCrudService(client, databaseName, collectionName);
+  invalidId = "5be1c07f21fd86540546eb5f",
+  expect = require("chai").expect;
 chai.should();
-let database;
-let collection;
+
+let database,
+  collection,
+  service = new GenericCrudService(client, databaseName, collectionName);
 
 chai.use(chaiAsPromised);
 
@@ -58,12 +61,51 @@ describe("GenericCrudService", () => {
     it("should return all documents by default", async () => {
       const objects = await service.list();
       objects.length.should.be.eql(data.length);
+      objects.should.be.eql(data);
+    });
+
+    describe("query", () => {
+      it("should return only the objects that include the letter 'a'", async () => {
+        const objects = await service.list({ name: /a/i });
+        const withLetterA = data.filter(value => value.name.includes("a"));
+        objects.should.be.eql(withLetterA);
+      });
     });
 
     describe("limit", () => {
       it("should return the same number of documents as limit value", async () => {
         const objects = await service.list(null, 5);
         objects.length.should.be.eql(5);
+      });
+    });
+
+    describe("skip", () => {
+      it("should return from the 5 member onward", async () => {
+        const objects = await service.list(null, null, 5);
+        objects.length.should.be.eql(5);
+        objects.should.be.eql(data.slice(5));
+      });
+    });
+
+    describe("sort", () => {
+      it("should return the list in alphabetical asc order", async () => {
+        const objects = await service.list(null, null, null, { name: 1 });
+        const orderedData = data.sort((a, b) => {
+          if (a.name < b.name) return -1;
+          if (a.name > b.name) return 1;
+          return 0;
+        });
+        objects.should.be.eql(orderedData);
+      });
+
+      it("should return the list in alphabetical desc order", async () => {
+        const objects = await service.list(null, null, null, { name: -1 });
+        const orderedData = data.sort((a, b) => {
+          if (a.name > b.name) return -1;
+          if (a.name < b.name) return 1;
+          return 0;
+        });
+        objects.should.be.eql(orderedData);
       });
     });
 
@@ -99,6 +141,14 @@ describe("GenericCrudService", () => {
         error.should.be.instanceof(ClientNotConnected);
       }
     });
+
+    describe("query", () => {
+      it("should return the count of only the objects that include the letter 'a'", async () => {
+        const objects = await service.count({ name: /a/i });
+        const withLetterA = data.filter(value => value.name.includes("a"));
+        objects.should.be.eql(withLetterA.length);
+      });
+    });
   });
 
   describe("create", () => {
@@ -118,62 +168,165 @@ describe("GenericCrudService", () => {
         error.should.be.instanceof(ClientNotConnected);
       }
     });
-  });
 
-  describe("patch", () => {
-    it("should throw an error if the client is not connected", async () => {
-      const notConnectedClient = new MongoClient(uri, clientOptions);
-      const service = new GenericCrudService(
-        notConnectedClient,
-        databaseName,
-        collectionName
-      );
-      try {
-        await service.patch(validId, {
-          name: "foo"
-        });
-        false.should.be.eql(true, "The function should NOT HAVE passed");
-      } catch (error) {
-        error.should.be.instanceof(ClientNotConnected);
-      }
+    it("should create a new object", async () => {
+      const oldCount = await service.count();
+      const object = await service.create({
+        name: "foo"
+      });
+      const newCount = await service.count();
+      object.should.haveOwnProperty("_id");
+      object.should.haveOwnProperty("name");
+      object.should.haveOwnProperty("createdAt");
+      newCount.should.be.eql(oldCount + 1);
     });
   });
 
-  describe("update", () => {
-    it("should throw an error if the client is not connected", async () => {
-      const notConnectedClient = new MongoClient(uri, clientOptions);
-      const service = new GenericCrudService(
-        notConnectedClient,
-        databaseName,
-        collectionName
-      );
-      try {
-        await service.update(validId, {
-          name: "foo"
-        });
-        false.should.be.eql(true, "The function should NOT HAVE passed");
-      } catch (error) {
-        error.should.be.instanceof(ClientNotConnected);
-      }
-    });
-  });
+  describe("Detail Services", () => {
+    describe("get", () => {
+      it("should throw an error if the client is not connected", async () => {
+        const notConnectedClient = new MongoClient(uri, clientOptions);
+        const service = new GenericCrudService(
+          notConnectedClient,
+          databaseName,
+          collectionName
+        );
+        try {
+          await service.get(validId);
+          false.should.be.eql(true, "The function should NOT HAVE passed");
+        } catch (error) {
+          error.should.be.instanceof(ClientNotConnected);
+        }
+      });
 
-  describe("remove", () => {
-    it("should throw an error if the client is not connected", async () => {
-      const notConnectedClient = new MongoClient(uri, clientOptions);
-      const service = new GenericCrudService(
-        notConnectedClient,
-        databaseName,
-        collectionName
-      );
-      try {
-        await service.remove(validId, {
-          name: "foo"
+      it("should return null if the object is not found", async () => {
+        const object = await service.get(invalidId);
+        expect(object).to.be.null;
+      });
+
+      describe("projection", () => {
+        it("should return the document without the _id", async () => {
+          const object = await service.get(validId, { _id: 0 });
+          object.should.not.haveOwnProperty("_id");
+          object.should.haveOwnProperty("name");
         });
-        false.should.be.eql(true, "The function should NOT HAVE passed");
-      } catch (error) {
-        error.should.be.instanceof(ClientNotConnected);
-      }
+
+        it("should return all documents only with the _id", async () => {
+          const object = await service.get(validId, { _id: 1 });
+          object.should.haveOwnProperty("_id");
+          object.should.not.haveOwnProperty("name");
+        });
+      });
+    });
+
+    describe("patch", () => {
+      it("should throw an error if the client is not connected", async () => {
+        const notConnectedClient = new MongoClient(uri, clientOptions);
+        const service = new GenericCrudService(
+          notConnectedClient,
+          databaseName,
+          collectionName
+        );
+        try {
+          await service.patch(validId, {
+            name: "foo"
+          });
+          false.should.be.eql(true, "The function should NOT HAVE passed");
+        } catch (error) {
+          error.should.be.instanceof(ClientNotConnected);
+        }
+      });
+
+      it("should return null if the object is not found", async () => {
+        const object = await service.patch(invalidId, {
+          type: "ugly"
+        });
+        expect(object).to.be.null;
+      });
+
+      it("should set only one field of the object", async () => {
+        const originalObject = await service.get(validId);
+        originalObject.should.not.haveOwnProperty("type");
+        const object = await service.patch(validId, {
+          type: "ugly"
+        });
+        object.should.haveOwnProperty("type");
+        object.should.haveOwnProperty("lastModifiedAt");
+        object._id.should.be.eql(originalObject._id);
+        object.name.should.be.eql(originalObject.name);
+      });
+    });
+
+    describe("update", () => {
+      it("should throw an error if the client is not connected", async () => {
+        const notConnectedClient = new MongoClient(uri, clientOptions);
+        const service = new GenericCrudService(
+          notConnectedClient,
+          databaseName,
+          collectionName
+        );
+        try {
+          await service.update(validId, {
+            name: "foo"
+          });
+          false.should.be.eql(true, "The function should NOT HAVE passed");
+        } catch (error) {
+          error.should.be.instanceof(ClientNotConnected);
+        }
+      });
+
+      it("should return null if the object is not found", async () => {
+        const object = await service.update(invalidId, {
+          $unset: {
+            name: ""
+          }
+        });
+        expect(object).to.be.null;
+      });
+
+      it("should unset the name property", async () => {
+        const originalObject = await service.get(validId);
+        const object = await service.update(validId, {
+          $unset: {
+            name: ""
+          }
+        });
+        originalObject.should.haveOwnProperty("name");
+        object.should.not.haveOwnProperty("name");
+      });
+    });
+
+    describe("remove", () => {
+      it("should throw an error if the client is not connected", async () => {
+        const notConnectedClient = new MongoClient(uri, clientOptions);
+        const service = new GenericCrudService(
+          notConnectedClient,
+          databaseName,
+          collectionName
+        );
+        try {
+          await service.remove(validId, {
+            name: "foo"
+          });
+          false.should.be.eql(true, "The function should NOT HAVE passed");
+        } catch (error) {
+          error.should.be.instanceof(ClientNotConnected);
+        }
+      });
+
+      it("should return null if the object is not found", async () => {
+        const object = await service.remove(invalidId);
+        expect(object).to.be.null;
+      });
+
+      it("should delete the document", async () => {
+        const oldCount = await service.count();
+        const object = await service.remove(validId);
+        object.should.haveOwnProperty("_id");
+        object.should.haveOwnProperty("name");
+        const newCount = await service.count();
+        newCount.should.be.eql(oldCount - 1);
+      });
     });
   });
 });

@@ -1,6 +1,6 @@
-const { MongoClient } = require("mongodb"),
+const { MongoClient, ObjectId } = require("mongodb"),
   assert = require("assert"),
-  ClientNotConnected = require('./exceptions/ClientNotConnected');
+  ClientNotConnected = require("./exceptions/ClientNotConnected");
 
 /**
  * Implements basic Crud operations for a desired collection.
@@ -61,6 +61,13 @@ class GenericCrudService {
     }
   }
 
+  verifyId(_id) {
+    if (!(_id instanceof ObjectId)) {
+      _id = new ObjectId(_id);
+    }
+    return _id;
+  }
+
   /**
    * Returns the quizzes that satisfy a query
    *
@@ -98,11 +105,12 @@ class GenericCrudService {
    */
   async create(document) {
     this.verifyConnection();
-    return await this.collection.insertOne(
+    const response = await this.collection.insertOne(
       Object.assign(document, {
         createdAt: new Date()
       })
     );
+    return response.ops[0];
   }
 
   /**
@@ -113,6 +121,7 @@ class GenericCrudService {
    */
   async get(_id, projection) {
     this.verifyConnection();
+    _id = this.verifyId(_id);
     return await this.collection.findOne(
       { _id: new ObjectId(_id) },
       { projection }
@@ -120,38 +129,69 @@ class GenericCrudService {
   }
 
   /**
-   * Partially updates a document. It only sets the sent fields.
+   * Generic update service for all MongoDB Operators.
+   *
+   * Options: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate
+   *
+   * @param {Object} _id: The MongoDB Id of the object to be updated
+   * @param {Object} update: MongoDB update operations
+   * @param {Object} [options={}]:
+   * @param {boolean} [options.returnOriginal=false]:
+   */
+  async update(_id, update, options = {}) {
+    this.verifyConnection();
+    _id = this.verifyId(_id);
+    if (update.$set) {
+      update.$set = Object.assign(update.$set, {
+        lastModifiedAt: new Date()
+      });
+    } else {
+      update.$set = {
+        lastModifiedAt: new Date()
+      };
+    }
+    const response = await this.collection.findOneAndUpdate(
+      { _id: new ObjectId(_id) },
+      update,
+      Object.assign(
+        {
+          returnOriginal: false
+        },
+        options
+      )
+    );
+    return response.value;
+  }
+
+  /**
+   * Partially updates a document. It only sets the sent fields. Uses the $set operator
+   *
+   * Options: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate
    *
    * @param {Object} _id: The MongoDB Id of the object to be updated
    * @param {Object} data: The data to be updated
+   * @param {Object} [options={}]:
+   * @param {boolean} [options.returnOriginal=false]:
    * @returns {Object}
    */
-  async patch(_id, data) {
+  async patch(_id, data, options = {}) {
     this.verifyConnection();
-    return await this.collection.findOneAndUpdate(
+    _id = this.verifyId(_id);
+    const response = await this.collection.findOneAndUpdate(
       { _id: new ObjectId(_id) },
       {
         $set: Object.assign(data, {
           lastModifiedAt: new Date()
         })
-      }
+      },
+      Object.assign(
+        {
+          returnOriginal: false
+        },
+        options
+      )
     );
-  }
-
-  /**
-   * Fully updates a document. It only sets the sent fields.
-   *
-   * @param {Object} _id: The MongoDB Id of the object to be updated
-   * @param {Object} data: The data to be updated
-   */
-  async update(_id, data) {
-    this.verifyConnection();
-    return await this.collection.findOneAndUpdate(
-      { _id: new ObjectId(_id) },
-      Object.assign(data, {
-        lastModifiedAt: new Date()
-      })
-    );
+    return response.value;
   }
 
   /**
@@ -159,12 +199,14 @@ class GenericCrudService {
    *
    * @param {Object} document: JSON document to be stored in MongoDB
    */
-  async remove(_id) {
+  async remove(_id, options = {}) {
     this.verifyConnection();
-    return await this.collection.findOneAndUpdate(
-      { _id: new ObjectId(_id), active: true },
-      { $set: { active: false } }
+    _id = this.verifyId(_id);
+    const response = await this.collection.findOneAndDelete(
+      { _id },
+      Object.assign({}, options)
     );
+    return response.value;
   }
 }
 
