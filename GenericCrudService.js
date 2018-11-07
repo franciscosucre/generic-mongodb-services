@@ -25,7 +25,7 @@ class GenericCrudService {
    */
   constructor(client, databaseName, collectionName) {
     assert(
-      client instanceof MongoClient,
+      client.constructor.name === "MongoClient",
       "client MUST be an instance of MongoClient"
     );
     assert(typeof databaseName === "string", "databaseName MUST be a string");
