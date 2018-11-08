@@ -3,7 +3,6 @@ const chai = require("chai"),
   GenericCrudService = require("../GenericCrudService"),
   AuditedCrudService = require("../AuditedCrudService"),
   { MongoClient } = require("mongodb"),
-  { CREATE, UPDATE, REMOVE } = require("../constants"),
   uri = "mongodb://localhost:27017",
   data = require("./data"),
   databaseName = "test",
@@ -62,7 +61,7 @@ describe("AuditedCrudService.test", () => {
       });
       const audits = await auditService.list();
       const audit = audits[0];
-      audit.operation.should.be.eql(CREATE);
+      audit.operation.should.be.eql(service.CREATE);
       audit.new.should.be.eql(object);
     });
   });
@@ -78,7 +77,7 @@ describe("AuditedCrudService.test", () => {
         });
         const audits = await auditService.list();
         const audit = audits[0];
-        audit.operation.should.be.eql(UPDATE);
+        audit.operation.should.be.eql(service.UPDATE);
         audit.old.should.be.eql(originalObject);
         audit.new.should.be.eql(object);
       });
@@ -92,7 +91,7 @@ describe("AuditedCrudService.test", () => {
         });
         const audits = await auditService.list();
         const audit = audits[0];
-        audit.operation.should.be.eql(UPDATE);
+        audit.operation.should.be.eql(service.UPDATE);
         audit.old.should.be.eql(originalObject);
         audit.new.should.be.eql(object);
       });
@@ -103,7 +102,7 @@ describe("AuditedCrudService.test", () => {
         const object = await service.remove(validId);
         const audits = await auditService.list();
         const audit = audits[0];
-        audit.operation.should.be.eql(REMOVE);
+        audit.operation.should.be.eql(service.REMOVE);
         audit.old.should.be.eql(object);
         audit.should.not.haveOwnProperty("new");
       });

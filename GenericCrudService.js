@@ -45,6 +45,22 @@ class GenericCrudService {
     }
   }
 
+  get CREATE() {
+    return "CREATE";
+  }
+
+  get UPDATE() {
+    return "UPDATE";
+  }
+
+  get REMOVE() {
+    return "REMOVE";
+  }
+
+  get ANONYMOUS() {
+    return "Anonymous";
+  }
+
   get creationDateField() {
     return "createdAt";
   }
