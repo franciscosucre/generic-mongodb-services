@@ -54,6 +54,37 @@ after(async () => {
 
 //Our parent block
 describe("AuditedCrudService.test", () => {
+  describe("constructor", () => {
+    it("should create a service with the default audit collection name", async () => {
+      const newService = new AuditedCrudService(
+        client,
+        databaseName,
+        collectionName
+      );
+      newService.verifyConnection();
+      newService.auditCollectionName.should.be.eql(
+        newService.DEFAULT_AUDIT_COLLECTION_NAME
+      );
+      newService.auditCollection.collectionName.should.be.eql(
+        newService.DEFAULT_AUDIT_COLLECTION_NAME
+      );
+    });
+
+    it("should create a service with the given audit collection name", async () => {
+      const newService = new AuditedCrudService(
+        client,
+        databaseName,
+        collectionName,
+        auditCollectionName
+      );
+      newService.verifyConnection();
+      newService.auditCollectionName.should.be.eql(auditCollectionName);
+      newService.auditCollection.collectionName.should.be.eql(
+        auditCollectionName
+      );
+    });
+  });
+
   describe("create", () => {
     it("should create a new object", async () => {
       const object = await service.create({

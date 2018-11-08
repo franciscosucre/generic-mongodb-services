@@ -18,14 +18,10 @@ class AuditedCrudService extends GenericCrudService {
    * @param {String} collectionName: The collection name
    * @param {String} [auditCollectionName='audits']: The name of the collection where the audits will be stored
    */
-  constructor(
-    client,
-    databaseName,
-    collectionName,
-    auditCollectionName = this.DEFAULT_AUDIT_COLLECTION_NAME
-  ) {
+  constructor(client, databaseName, collectionName, auditCollectionName) {
     super(client, databaseName, collectionName);
-    this.auditCollectionName = auditCollectionName;
+    this.auditCollectionName =
+      auditCollectionName || this.DEFAULT_AUDIT_COLLECTION_NAME;
     this.auditCollection = null;
   }
 
