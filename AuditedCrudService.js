@@ -43,6 +43,7 @@ class AuditedCrudService extends GenericCrudService {
    * @param {*} [user=ANONYMOUS]
    */
   async create(document, user = this.ANONYMOUS) {
+    await this.verifyConnection();
     const object = await super.create(document);
     await this.auditCollection.insertOne({
       collection: this.collection.collectionName,
@@ -60,6 +61,7 @@ class AuditedCrudService extends GenericCrudService {
    * @param {Object} data: The data to be updated
    */
   async patch(_id, data, options = {}, user = this.ANONYMOUS) {
+    await this.verifyConnection();
     const oldDoc = await this.collection.findOne({ _id: new ObjectId(_id) });
     if (!oldDoc) {
       return;
@@ -82,6 +84,7 @@ class AuditedCrudService extends GenericCrudService {
    * @param {Object} data: The data to be updated
    */
   async update(_id, data, options = {}, user = this.ANONYMOUS) {
+    await this.verifyConnection();
     const oldDoc = await this.collection.findOne({ _id: new ObjectId(_id) });
     if (!oldDoc) {
       return;
@@ -103,6 +106,7 @@ class AuditedCrudService extends GenericCrudService {
    * @param {Object} document: JSON document to be stored in MongoDB
    */
   async remove(_id, options = {}, user = this.ANONYMOUS) {
+    await this.verifyConnection();
     const object = await super.remove(_id, options);
     await this.auditCollection.insertOne({
       collection: this.collection.collectionName,
