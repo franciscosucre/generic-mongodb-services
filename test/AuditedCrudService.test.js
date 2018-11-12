@@ -1,142 +1,121 @@
-const chai = require("chai"),
-  chaiAsPromised = require("chai-as-promised"),
-  GenericCrudService = require("../GenericCrudService"),
-  AuditedCrudService = require("../AuditedCrudService"),
-  { MongoClient } = require("mongodb"),
-  uri = "mongodb://localhost:27017",
-  data = require("./data"),
-  databaseName = "test",
-  collectionName = "cats",
-  auditCollectionName = "cat-audits",
-  clientOptions = {
-    useNewUrlParser: true
-  },
-  client = new MongoClient(uri, clientOptions),
-  validId = "5be1c07f21fd86540546eb53";
-chai.should();
+const GenericCrudService = require("../GenericCrudService"),
+  { ObjectId } = require("mongodb");
 
-let database,
-  collection,
-  auditCollection,
-  service = new AuditedCrudService(
-    client,
-    databaseName,
-    collectionName,
-    auditCollectionName
-  ),
-  auditService = new GenericCrudService(
-    client,
-    databaseName,
-    auditCollectionName
-  );
+/**
+ * A subclass of the GenericCrudService that stores audit registers
+ * in write operations (create, patch, update)
+ *
+ * @extends GenericCrudService
+ */
+class AuditedCrudService extends GenericCrudService {
+  /**
+   * Creates an instance of a AuditedCrudService
+   *
+   * @param {MongoClient} client: A MongoClient instance from the NodeJS MongoDB driver. Can be
+   * already connected or not when initializing, but it has to be connected when performing any
+   * operations
+   * @param {String} databaseName: The database name
+   * @param {String} collectionName: The collection name
+   * @param {String} [auditCollectionName='audits']: The name of the collection where the audits will be stored
+   */
+  constructor(client, databaseName, collectionName, auditCollectionName) {
+    super(client, databaseName, collectionName);
+    this.auditCollectionName =
+      auditCollectionName || this.DEFAULT_AUDIT_COLLECTION_NAME;
+    this.auditCollection = null;
+  }
 
-chai.use(chaiAsPromised);
+  get DEFAULT_AUDIT_COLLECTION_NAME() {
+    return "audits";
+  }
 
-before(async () => {
-  await client.connect();
-  database = client.db(databaseName);
-  collection = database.collection(collectionName);
-  auditCollection = database.collection(auditCollectionName);
-  await collection.deleteMany({});
-  await auditCollection.deleteMany({});
-});
+  verifyConnection() {
+    super.verifyConnection();
+    if (!this.auditCollection) {
+      this.auditCollection = this.database.collection(this.auditCollectionName);
+    }
+  }
 
-beforeEach(async () => {
-  await collection.deleteMany({});
-  await auditCollection.deleteMany({});
-  await collection.insertMany(data);
-});
-
-after(async () => {
-  await auditCollection.deleteMany({});
-  await collection.deleteMany({});
-});
-
-//Our parent block
-describe("AuditedCrudService.test", () => {
-  describe("constructor", () => {
-    it("should create a service with the default audit collection name", async () => {
-      const newService = new AuditedCrudService(
-        client,
-        databaseName,
-        collectionName
-      );
-      newService.verifyConnection();
-      newService.auditCollectionName.should.be.eql(
-        newService.DEFAULT_AUDIT_COLLECTION_NAME
-      );
-      newService.auditCollection.collectionName.should.be.eql(
-        newService.DEFAULT_AUDIT_COLLECTION_NAME
-      );
+  /**
+   * Creates a document and returns it
+   *
+   * @param {Object} document: JSON document to be stored in MongoDB
+   * @param {*} [user=ANONYMOUS]
+   */
+  async create(document, user = this.ANONYMOUS) {
+    await verifyConnection();
+    const object = await super.create(document);
+    await this.auditCollection.insertOne({
+      collection: this.collection.collectionName,
+      operation: this.CREATE,
+      new: object,
+      user: user
     });
+    return object;
+  }
 
-    it("should create a service with the given audit collection name", async () => {
-      const newService = new AuditedCrudService(
-        client,
-        databaseName,
-        collectionName,
-        auditCollectionName
-      );
-      newService.verifyConnection();
-      newService.auditCollectionName.should.be.eql(auditCollectionName);
-      newService.auditCollection.collectionName.should.be.eql(
-        auditCollectionName
-      );
+  /**
+   * Partially updates a document. It only sets the sent fields.
+   *
+   * @param {String} _id: The MongoDB Id of the object to be updated
+   * @param {Object} data: The data to be updated
+   */
+  async patch(_id, data, options = {}, user = this.ANONYMOUS) {
+    await verifyConnection();
+    const oldDoc = await this.collection.findOne({ _id: new ObjectId(_id) });
+    if (!oldDoc) {
+      return;
+    }
+    const newDoc = await super.patch(_id, data, options);
+    await this.auditCollection.insertOne({
+      collection: this.collection.collectionName,
+      operation: this.UPDATE,
+      old: oldDoc,
+      new: newDoc,
+      user
     });
-  });
+    return newDoc;
+  }
 
-  describe("create", () => {
-    it("should create a new object", async () => {
-      const object = await service.create({
-        name: "foo"
-      });
-      const audits = await auditService.list();
-      const audit = audits[0];
-      audit.operation.should.be.eql(service.CREATE);
-      audit.new.should.be.eql(object);
+  /**
+   * Fully updates a document. It only sets the sent fields.
+   *
+   * @param {String} _id: The MongoDB Id of the object to be updated
+   * @param {Object} data: The data to be updated
+   */
+  async update(_id, data, options = {}, user = this.ANONYMOUS) {
+    await verifyConnection();
+    const oldDoc = await this.collection.findOne({ _id: new ObjectId(_id) });
+    if (!oldDoc) {
+      return;
+    }
+    const newDoc = await super.update(_id, data, options);
+    await this.auditCollection.insertOne({
+      collection: this.collection.collectionName,
+      operation: this.UPDATE,
+      old: oldDoc,
+      new: newDoc,
+      user
     });
-  });
+    return newDoc;
+  }
 
-  describe("Detail Services", () => {
-    describe("update", () => {
-      it("should create the appropiate audit", async () => {
-        const originalObject = await service.get(validId);
-        const object = await service.update(validId, {
-          $unset: {
-            name: ""
-          }
-        });
-        const audits = await auditService.list();
-        const audit = audits[0];
-        audit.operation.should.be.eql(service.UPDATE);
-        audit.old.should.be.eql(originalObject);
-        audit.new.should.be.eql(object);
-      });
+  /**
+   * Soft deletes a document
+   *
+   * @param {Object} document: JSON document to be stored in MongoDB
+   */
+  async remove(_id, options = {}, user = this.ANONYMOUS) {
+    await verifyConnection();
+    const object = await super.remove(_id, options);
+    await this.auditCollection.insertOne({
+      collection: this.collection.collectionName,
+      operation: this.REMOVE,
+      old: object,
+      user
     });
+    return object;
+  }
+}
 
-    describe("patch", () => {
-      it("should set only one field of the object", async () => {
-        const originalObject = await service.get(validId);
-        const object = await service.patch(validId, {
-          type: "ugly"
-        });
-        const audits = await auditService.list();
-        const audit = audits[0];
-        audit.operation.should.be.eql(service.UPDATE);
-        audit.old.should.be.eql(originalObject);
-        audit.new.should.be.eql(object);
-      });
-    });
-
-    describe("remove", () => {
-      it("should delete the document", async () => {
-        const object = await service.remove(validId);
-        const audits = await auditService.list();
-        const audit = audits[0];
-        audit.operation.should.be.eql(service.REMOVE);
-        audit.old.should.be.eql(object);
-        audit.should.not.haveOwnProperty("new");
-      });
-    });
-  });
-});
+module.exports = AuditedCrudService;
