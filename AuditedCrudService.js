@@ -61,6 +61,14 @@ class AuditedCrudService extends GenericCrudService {
    * @param {Object} data: The data to be updated
    */
   async patch(_id, data, options = {}, user = this.ANONYMOUS) {
+    /* As this is a patch, we clean undefined data */
+    for (const key in data) {
+      if (data.hasOwnProperty(key)) {
+        if (data[key] === undefined) {
+          delete data[key];
+        }
+      }
+    }
     await this.verifyConnection();
     const oldDoc = await this.collection.findOne({ _id: new ObjectId(_id) });
     if (!oldDoc) {
