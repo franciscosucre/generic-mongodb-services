@@ -1,7 +1,7 @@
 const chai = require("chai"),
   chaiAsPromised = require("chai-as-promised"),
   GenericCrudService = require("../GenericCrudService"),
-  { MongoClient } = require("mongodb"),
+  { MongoClient, ObjectId } = require("mongodb"),
   uri = "mongodb://localhost:27017",
   data = require("./data"),
   databaseName = "test",
@@ -11,7 +11,7 @@ const chai = require("chai"),
   },
   client = new MongoClient(uri, clientOptions),
   ClientNotConnected = require("../exceptions/ClientNotConnected"),
-  validId = "5be1c07f21fd86540546eb53",
+  validId = new ObjectId("5be1c07f21fd86540546eb53"),
   invalidId = "5be1c07f21fd86540546eb5f",
   expect = require("chai").expect;
 chai.should();
@@ -197,7 +197,7 @@ describe("GenericCrudService", () => {
           collectionName
         );
         try {
-          await service.get(validId);
+          await service.get({ _id: validId });
           false.should.be.eql(true, "The function should NOT HAVE passed");
         } catch (error) {
           error.should.be.instanceof(ClientNotConnected);
@@ -205,19 +205,55 @@ describe("GenericCrudService", () => {
       });
 
       it("should return null if the object is not found", async () => {
-        const object = await service.get(invalidId);
+        const object = await service.get({ _id: invalidId });
         expect(object).to.be.null;
       });
 
       describe("projection", () => {
         it("should return the document without the _id", async () => {
-          const object = await service.get(validId, { _id: 0 });
+          const object = await service.get({ _id: validId }, { _id: 0 });
           object.should.not.haveOwnProperty("_id");
           object.should.haveOwnProperty("name");
         });
 
         it("should return all documents only with the _id", async () => {
-          const object = await service.get(validId, { _id: 1 });
+          const object = await service.get({ _id: validId }, { _id: 1 });
+          object.should.haveOwnProperty("_id");
+          object.should.not.haveOwnProperty("name");
+        });
+      });
+    });
+
+    describe("getById", () => {
+      it("should throw an error if the client is not connected", async () => {
+        const notConnectedClient = new MongoClient(uri, clientOptions);
+        const service = new GenericCrudService(
+          notConnectedClient,
+          databaseName,
+          collectionName
+        );
+        try {
+          await service.getById(validId);
+          false.should.be.eql(true, "The function should NOT HAVE passed");
+        } catch (error) {
+          error.should.be.instanceof(ClientNotConnected);
+        }
+      });
+
+      it("should return null if the object is not found", async () => {
+        const object = await service.getById(invalidId);
+        expect(object).to.be.null;
+      });
+
+      describe("projection", () => {
+        it("should return the document without the _id", async () => {
+          const object = await service.getById(validId, { _id: 0 });
+          object.should.not.haveOwnProperty("_id");
+          object.should.haveOwnProperty("name");
+        });
+
+        it("should return all documents only with the _id", async () => {
+          const object = await service.getById(validId, { _id: 1 });
           object.should.haveOwnProperty("_id");
           object.should.not.haveOwnProperty("name");
         });

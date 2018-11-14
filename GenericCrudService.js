@@ -137,10 +137,21 @@ class GenericCrudService {
   /**
    * Obtains the document with the given _id
    *
+   * @param {Object} query: MongoDB query.
+   * @param {Object} projection: Used for projection. Defines which fields of the objects must be returned. Useful for optimizing queries.
+   */
+  async get(query, projection) {
+    this.verifyConnection();
+    return await this.collection.findOne(query, { projection });
+  }
+
+  /**
+   * Obtains the document with the given _id
+   *
    * @param {ObjectId|String} _id: The MongoDB Id of the requested object
    * @param {Object} projection: Used for projection. Defines which fields of the objects must be returned. Useful for optimizing queries.
    */
-  async get(_id, projection) {
+  async getById(_id, projection) {
     this.verifyConnection();
     _id = this.verifyId(_id);
     return await this.collection.findOne({ _id }, { projection });
