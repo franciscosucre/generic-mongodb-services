@@ -62,6 +62,20 @@ Returns the count of documents that satisfy a query.
 const count = await service.count({ name: /a/i });
 ```
 
+### **exists(query)**
+
+Verifies if an object exists or not.
+
+#### Params:
+
+- **{Object} query:** MongoDB query.
+
+#### Example:
+
+```javascript
+const exists = await service.exists({ name: /a/i });
+```
+
 ### **create(query)**
 
 Creates a document and returns it.

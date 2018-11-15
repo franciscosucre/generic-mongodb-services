@@ -6,6 +6,7 @@ const chai = require("chai"),
   data = require("./data"),
   databaseName = "test",
   collectionName = "cats",
+  { AssertionError } = require("assert"),
   clientOptions = {
     useNewUrlParser: true
   },
@@ -153,6 +154,46 @@ describe("GenericCrudService", () => {
         const withLetterA = data.filter(value => value.name.includes("a"));
         count.should.be.eql(withLetterA.length);
       });
+    });
+  });
+
+  describe("exists", () => {
+    it("should throw an error if the client is not connected", async () => {
+      const notConnectedClient = new MongoClient(uri, clientOptions);
+      const service = new GenericCrudService(
+        notConnectedClient,
+        databaseName,
+        collectionName
+      );
+      try {
+        await service.exists();
+        false.should.be.eql(true, "The function should NOT HAVE passed");
+      } catch (error) {
+        error.should.be.instanceof(ClientNotConnected);
+      }
+    });
+
+    it("should throw an error if no query is passed", async () => {
+      try {
+        await service.exists();
+        false.should.be.eql(true, "The function should NOT HAVE passed");
+      } catch (error) {
+        error.should.be.instanceof(AssertionError);
+      }
+    });
+
+    it("should return true if the object exists", async () => {
+      const exists = await service.exists({
+        _id: validId
+      });
+      exists.should.be.eql(true);
+    });
+
+    it("should return false if the object does NOT exists", async () => {
+      const exists = await service.exists({
+        _id: invalidId
+      });
+      exists.should.be.eql(false);
     });
   });
 

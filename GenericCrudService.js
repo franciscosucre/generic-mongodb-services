@@ -123,6 +123,25 @@ class GenericCrudService {
   }
 
   /**
+   * Verifies if an object exists or not
+   *
+   * @param {Object} query: MongoDB query.
+   */
+  async exists(query) {
+    this.verifyConnection();
+    assert(typeof query === "object", "The query must be an non-empty object");
+    assert(
+      Object.keys(query).length > 0,
+      "The query must be an non-empty object"
+    );
+    const object = await this.collection.findOne(query, { _id: 1 });
+    if (object) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Creates a document and returns it
    *
    * @param {Object} document: JSON document to be stored in MongoDB
