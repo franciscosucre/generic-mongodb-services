@@ -14,6 +14,10 @@ const chai = require("chai"),
   ClientNotConnected = require("../exceptions/ClientNotConnected"),
   validId = new ObjectId("5be1c07f21fd86540546eb53"),
   invalidId = "5be1c07f21fd86540546eb5f",
+  validEmbbededField = "likes",
+  validSubdocument = {
+    name: "snakes"
+  },
   expect = require("chai").expect;
 chai.should();
 
@@ -407,6 +411,107 @@ describe("GenericCrudService", () => {
         object.should.haveOwnProperty("_id");
         object.should.haveOwnProperty("name");
         const newCount = await service.count();
+        newCount.should.be.eql(oldCount - 1);
+      });
+    });
+
+    describe("addSubdocument", () => {
+      it("should throw an error if the client is not connected", async () => {
+        const notConnectedClient = new MongoClient(uri, clientOptions);
+        const service = new GenericCrudService(
+          notConnectedClient,
+          databaseName,
+          collectionName
+        );
+        try {
+          await service.addSubdocument(
+            validId,
+            validEmbbededField,
+            validSubdocument
+          );
+          false.should.be.eql(true, "The function should NOT HAVE passed");
+        } catch (error) {
+          error.should.be.instanceof(ClientNotConnected);
+        }
+      });
+
+      it("should return null if the document is not found", async () => {
+        const object = await service.addSubdocument(
+          invalidId,
+          validEmbbededField,
+          validSubdocument
+        );
+        expect(object).to.be.null;
+      });
+
+      it("should create the subdocument", async () => {
+        const oldObject = await service.getById(validId),
+          oldCount = oldObject[validEmbbededField].length,
+          object = await service.addSubdocument(
+            validId,
+            validEmbbededField,
+            validSubdocument
+          );
+        object.should.haveOwnProperty(validEmbbededField);
+        const newCount = object[validEmbbededField].length;
+        newCount.should.be.eql(oldCount + 1);
+      });
+
+      it("should accept primitives", async () => {
+        const oldObject = await service.getById(validId),
+          oldCount = oldObject[validEmbbededField].length,
+          object = await service.addSubdocument(
+            validId,
+            validEmbbededField,
+            "foo fighters is an awesome band"
+          );
+        object.should.haveOwnProperty(validEmbbededField);
+        const newCount = object[validEmbbededField].length;
+        newCount.should.be.eql(oldCount + 1);
+      });
+    });
+
+    describe("removeSubdocument", () => {
+      it("should throw an error if the client is not connected", async () => {
+        const notConnectedClient = new MongoClient(uri, clientOptions);
+        const service = new GenericCrudService(
+          notConnectedClient,
+          databaseName,
+          collectionName
+        );
+        try {
+          await service.addSubdocument(validId, validEmbbededField, {
+            name: "games"
+          });
+          false.should.be.eql(true, "The function should NOT HAVE passed");
+        } catch (error) {
+          error.should.be.instanceof(ClientNotConnected);
+        }
+      });
+
+      it("should return null if the document is not found", async () => {
+        const object = await service.addSubdocument(
+          invalidId,
+          validEmbbededField,
+          {
+            name: "games"
+          }
+        );
+        expect(object).to.be.null;
+      });
+
+      it("should remove the subdocument", async () => {
+        const oldObject = await service.getById(validId),
+          oldCount = oldObject[validEmbbededField].length,
+          object = await service.removeSubdocument(
+            validId,
+            validEmbbededField,
+            {
+              name: "games"
+            }
+          );
+        object.should.haveOwnProperty(validEmbbededField);
+        const newCount = object[validEmbbededField].length;
         newCount.should.be.eql(oldCount - 1);
       });
     });

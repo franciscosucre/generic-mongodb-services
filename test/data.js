@@ -1,53 +1,84 @@
-const { ObjectId } = require('mongodb')
+const { ObjectId } = require("mongodb");
+
+const games = () => {
+  return {
+    _id: new ObjectId(),
+    name: "games"
+  };
+};
+
+const music = () => {
+  return {
+    _id: new ObjectId(),
+    name: "music"
+  };
+};
+
+const tickles = () => {
+  return {
+    _id: new ObjectId(),
+    name: "tickles"
+  };
+};
 
 module.exports = [
   {
-    "_id": new ObjectId("5be1c07f21fd86540546eb53"),
-    "name": "Blacky"
+    _id: new ObjectId("5be1c07f21fd86540546eb53"),
+    name: "Blacky",
+    likes: [games(), music(), tickles()]
   },
 
   {
-    "_id": new ObjectId("5be1c07f21fd86540546eb54"),
-    "name": "Petri"
+    _id: new ObjectId("5be1c07f21fd86540546eb54"),
+    name: "Petri",
+    likes: [music()]
   },
 
   {
-    "_id": new ObjectId("5be1c07f21fd86540546eb55"),
-    "name": "Motts"
+    _id: new ObjectId("5be1c07f21fd86540546eb55"),
+    name: "Motts",
+    likes: [tickles()]
   },
 
   {
-    "_id": new ObjectId("5be1c07f21fd86540546eb56"),
-    "name": "Neko"
+    _id: new ObjectId("5be1c07f21fd86540546eb56"),
+    name: "Neko",
+    likes: [games(), tickles()]
   },
 
   {
-    "_id": new ObjectId("5be1c07f21fd86540546eb57"),
-    "name": "Whiskers"
+    _id: new ObjectId("5be1c07f21fd86540546eb57"),
+    name: "Whiskers",
+    likes: [games()]
   },
 
   {
-    "_id": new ObjectId("5be1c07f21fd86540546eb58"),
-    "name": "Sarah"
+    _id: new ObjectId("5be1c07f21fd86540546eb58"),
+    name: "Sarah",
+    likes: [games()]
   },
 
   {
-    "_id": new ObjectId("5be1c07f21fd86540546eb59"),
-    "name": "Niña"
+    _id: new ObjectId("5be1c07f21fd86540546eb59"),
+    name: "Niña",
+    likes: [games(), music(), tickles()]
   },
 
   {
-    "_id": new ObjectId("5be1c07f21fd86540546eb5a"),
-    "name": "Cindy"
+    _id: new ObjectId("5be1c07f21fd86540546eb5a"),
+    name: "Cindy",
+    likes: [music()]
   },
 
   {
-    "_id": new ObjectId("5be1c07f21fd86540546eb5b"),
-    "name": "Lucky"
+    _id: new ObjectId("5be1c07f21fd86540546eb5b"),
+    name: "Lucky",
+    likes: [music(), tickles()]
   },
 
   {
-    "_id": new ObjectId("5be1c07f21fd86540546eb5c"),
-    "name": "Katy"
+    _id: new ObjectId("5be1c07f21fd86540546eb5c"),
+    name: "Katy",
+    likes: [games(), music(), tickles()]
   }
-]
+];

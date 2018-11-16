@@ -221,19 +221,13 @@ class GenericCrudService {
     this.verifyConnection();
     _id = this.verifyId(_id);
     data[this.modificationDateField] = new Date();
-    const response = await this.collection.findOneAndUpdate(
-      { _id: new ObjectId(_id) },
+    return await this.update(
+      _id,
       {
         $set: data
       },
-      Object.assign(
-        {
-          returnOriginal: false
-        },
-        options
-      )
+      Object.assign({}, options)
     );
-    return response.value;
   }
 
   /**
@@ -250,6 +244,61 @@ class GenericCrudService {
       Object.assign({}, options)
     );
     return response.value;
+  }
+
+  async getSubdocument(_id, embeddedField, query) {
+    this.verifyConnection();
+    _id = this.verifyId(_id);
+    const response = await this.collection.findOne({ _id });
+
+    db.students.find({ semester: 1, grades: { $gte: 85 } }, { "grades.$": 1 });
+  }
+
+  /**
+   * Adds a new subdocument to an subdocument array field. It accepts both primitives and objects. If an object is passed, a _id parameter is added.
+   *
+   * Uses the $push operator.
+   *
+   * https://docs.mongodb.com/manual/reference/operator/update/push/
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {String} embeddedField: The name of the subdocument array field
+   * @param {Object} data: The subdocument to be added
+   * @param {Object} [options={}]: update options
+   */
+  async addSubdocument(_id, embeddedField, data, options = {}) {
+    assert(_id, "The '_id' parameter is required");
+    assert(embeddedField, "The 'embeddedField' parameter is required");
+    assert(data, "The 'data' parameter is required");
+    if (data === Object(data)) {
+      data["_id"] = new ObjectId();
+    }
+    return await this.update(
+      _id,
+      { $push: { [embeddedField]: data } },
+      Object.assign({}, options)
+    );
+  }
+
+  /**
+   * Removes a subdocument from an array
+   *
+   * https://docs.mongodb.com/manual/reference/operator/update/pull/
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {String} embeddedField: The name of the subdocument array field
+   * @param {Object} query: The query used to search for the subdocument to be pulled
+   * @param {Object} [options={}]: update options
+   */
+  async removeSubdocument(_id, embeddedField, query, options) {
+    assert(_id, "The '_id' parameter is required");
+    assert(embeddedField, "The 'embeddedField' parameter is required");
+    assert(query, "The 'query' parameter is required");
+    return await this.update(
+      _id,
+      { $pull: { [embeddedField]: query } },
+      Object.assign({}, options)
+    );
   }
 }
 

@@ -129,7 +129,7 @@ const object = await service.update(validId, {
 
 ### **patch(\_id, update, options = {})**
 
-Partially updates a document. It only sets the sent fields. Uses the [$set](https://docs.mongodb.com/manual/reference/operator/update/set/) operator.
+Partially updates a document. It only sets the sent fields. Uses the [\$set](https://docs.mongodb.com/manual/reference/operator/update/set/) operator.
 
 #### Params:
 
@@ -140,7 +140,7 @@ Partially updates a document. It only sets the sent fields. Uses the [$set](http
 #### Example:
 
 ```javascript
-const object = await service.patch(invalidId, {
+const object = await service.patch(validId, {
   type: "ugly"
 });
 ```
@@ -153,6 +153,52 @@ Deletes a document.
 
 - **{ObjectId|String} \_id:** The MongoDB Id of the requested object
 - **{Object} [options={}]:** [MongoDB Options](http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndDelete)
+
+#### Example:
+
+```javascript
+const object = await service.remove(validId);
+```
+
+### **addSubdocument(\_id, embeddedField, data, options = {})**
+
+Adds a new subdocument to a subdocument array field. It accepts both primitives and objects. If an object is passed, a \_id parameter is added. Uses the [\$push](https://docs.mongodb.com/manual/reference/operator/update/push/) operator.
+
+#### Params:
+
+- **{ObjectId|String} \_id:** The MongoDB Id of the requested object
+- **{String} embeddedField:** The name of the subdocument array field
+- **{Object} data:** The data to be added to the subdocument array field
+- **{Object} [options={}]:** [MongoDB Options](http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate)
+
+#### Example:
+
+```javascript
+const object = await service.addSubdocument(
+  validId,
+  validEmbbededField,
+  validSubdocument
+);
+```
+
+### **removeSubdocument(\_id, embeddedField, data, options = {})**
+
+Removes a subdocument from a subdocument array field. Uses the [\$pull](https://docs.mongodb.com/manual/reference/operator/update/pull/) operator.
+
+#### Params:
+
+- **{ObjectId|String} \_id:** The MongoDB Id of the requested object
+- **{String} embeddedField:** The name of the subdocument array field
+- **{Object} query:** The query used to search for the desired document
+- **{Object} [options={}]:** [MongoDB Options](http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate)
+
+#### Example:
+
+```javascript
+const object = await service.removeSubdocument(validId, validEmbbededField, {
+  name: "games"
+});
+```
 
 ## **Usage**
 
