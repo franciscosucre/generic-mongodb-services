@@ -159,7 +159,7 @@ class GenericCrudService {
    * @param {Object} query: MongoDB query.
    * @param {Object} projection: Used for projection. Defines which fields of the objects must be returned. Useful for optimizing queries.
    */
-  async get(query, projection) {
+  async get(query, projection = {}) {
     this.verifyConnection();
     return await this.collection.findOne(query, { projection });
   }
@@ -170,7 +170,7 @@ class GenericCrudService {
    * @param {ObjectId|String} _id: The MongoDB Id of the requested object
    * @param {Object} projection: Used for projection. Defines which fields of the objects must be returned. Useful for optimizing queries.
    */
-  async getById(_id, projection) {
+  async getById(_id, projection = {}) {
     this.verifyConnection();
     _id = this.verifyId(_id);
     return await this.collection.findOne({ _id }, { projection });
@@ -246,12 +246,36 @@ class GenericCrudService {
     return response.value;
   }
 
-  async getSubdocument(_id, embeddedField, query) {
-    this.verifyConnection();
+  /**
+   * Obtains a single subdocument of a requested document. If many subdocuments
+   * match the query, only the first one will be returned.
+   *
+   * It uses the $elemMatch operator
+   *
+   * https://docs.mongodb.com/manual/reference/operator/query/elemMatch/
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {String} embeddedField: The name of the subdocument array field
+   * @param {Object} query: The query used to search for the subdocument to be pulled
+   * @param {Object} [projection={}]: MongoDB projection object
+   */
+  async getSubdocument(_id, embeddedField, query, projection = {}) {
     _id = this.verifyId(_id);
-    const response = await this.collection.findOne({ _id });
-
-    db.students.find({ semester: 1, grades: { $gte: 85 } }, { "grades.$": 1 });
+    const object = await this.get(
+      {
+        _id,
+        [embeddedField]: {
+          $elemMatch: query
+        }
+      },
+      Object.assign(projection, {
+        [embeddedField]: 1,
+        [`${embeddedField}.$`]: 1
+      })
+    );
+    return object && object[embeddedField].length > 0
+      ? object[embeddedField][0]
+      : null;
   }
 
   /**
@@ -283,6 +307,8 @@ class GenericCrudService {
   /**
    * Removes a subdocument from an array
    *
+   * Uses the $pull operator.
+   *
    * https://docs.mongodb.com/manual/reference/operator/update/pull/
    *
    * @param {ObjectId|String} _id: The MongoDB Id of the requested document
@@ -290,7 +316,7 @@ class GenericCrudService {
    * @param {Object} query: The query used to search for the subdocument to be pulled
    * @param {Object} [options={}]: update options
    */
-  async removeSubdocument(_id, embeddedField, query, options) {
+  async removeSubdocument(_id, embeddedField, query, options = {}) {
     assert(_id, "The '_id' parameter is required");
     assert(embeddedField, "The 'embeddedField' parameter is required");
     assert(query, "The 'query' parameter is required");

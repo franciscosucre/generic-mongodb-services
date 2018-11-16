@@ -415,6 +415,60 @@ describe("GenericCrudService", () => {
       });
     });
 
+    describe("getSubdocument", () => {
+      it("should throw an error if the client is not connected", async () => {
+        const notConnectedClient = new MongoClient(uri, clientOptions);
+        const service = new GenericCrudService(
+          notConnectedClient,
+          databaseName,
+          collectionName
+        );
+        try {
+          await service.getSubdocument(validId, validEmbbededField, {
+            name: "games"
+          });
+          false.should.be.eql(true, "The function should NOT HAVE passed");
+        } catch (error) {
+          error.should.be.instanceof(ClientNotConnected);
+        }
+      });
+
+      it("should return null if the document is not found", async () => {
+        const object = await service.getSubdocument(
+          invalidId,
+          validEmbbededField,
+          {
+            name: "games"
+          }
+        );
+        expect(object).to.be.null;
+      });
+
+      it("should return null if the subdocument is not found", async () => {
+        const object = await service.getSubdocument(
+          validId,
+          validEmbbededField,
+          {
+            name: "dfgfdfdg"
+          }
+        );
+        expect(object).to.be.null;
+      });
+
+      it("should get the subdocument", async () => {
+        const object = await service.getSubdocument(
+          validId,
+          validEmbbededField,
+          {
+            name: "games"
+          }
+        );
+        object.should.haveOwnProperty("_id");
+        object.should.haveOwnProperty("name");
+        object.name.should.be.eql("games");
+      });
+    });
+
     describe("addSubdocument", () => {
       it("should throw an error if the client is not connected", async () => {
         const notConnectedClient = new MongoClient(uri, clientOptions);

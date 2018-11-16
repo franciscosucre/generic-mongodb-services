@@ -160,6 +160,25 @@ Deletes a document.
 const object = await service.remove(validId);
 ```
 
+### **getSubdocument(\_id, embeddedField, query, projection = {})**
+
+Obtains a single subdocument of a requested document. If many subdocuments match the query, only the first one will be returned. It uses the [\$elemMatch](https://docs.mongodb.com/manual/reference/operator/query/elemMatch/) operator
+
+#### Params:
+
+- **{ObjectId|String} \_id:** The MongoDB Id of the requested object
+- **{String} embeddedField:** The name of the subdocument array field
+- **{Object} query:** The query used to search for the subdocument to be pulled
+- **{Object} [projection={}]:** MongoDB projection object
+
+#### Example:
+
+```javascript
+const object = await service.getSubdocument(validId, validEmbbededField, {
+  name: "games"
+});
+```
+
 ### **addSubdocument(\_id, embeddedField, data, options = {})**
 
 Adds a new subdocument to a subdocument array field. It accepts both primitives and objects. If an object is passed, a \_id parameter is added. Uses the [\$push](https://docs.mongodb.com/manual/reference/operator/update/push/) operator.
