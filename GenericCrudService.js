@@ -426,6 +426,7 @@ class GenericCrudService {
     query["_id"] = _id;
     return await this.patch(query, data, options);
   }
+  
 
   /**
    * Removes a subdocument from an array
