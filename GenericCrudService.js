@@ -181,20 +181,19 @@ class GenericCrudService {
    *
    * Options: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate
    *
-   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {ObjectId|String} query: MongoDB query.
    * @param {Object} update: MongoDB update operations
    * @param {Object} [options={}]:
    * @param {boolean} [options.returnOriginal=false]:
    */
-  async update(_id, update, options = {}) {
+  async update(query, update, options = {}) {
     this.verifyConnection();
-    _id = this.verifyId(_id);
     if (!update.$set) {
       update.$set = {};
     }
     update.$set[this.modificationDateField] = new Date();
     const response = await this.collection.findOneAndUpdate(
-      { _id: new ObjectId(_id) },
+      query,
       update,
       Object.assign(
         {
@@ -204,6 +203,31 @@ class GenericCrudService {
       )
     );
     return response.value;
+  }
+
+  /**
+   * Alias for update but with Id
+   *
+   * Options: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {Object} update: MongoDB update operations
+   * @param {Object} [options={}]:
+   * @param {boolean} [options.returnOriginal=false]:
+   */
+  async updateById(_id, update, options = {}) {
+    this.verifyConnection();
+    _id = this.verifyId(_id);
+    return await this.update(
+      { _id },
+      update,
+      Object.assign(
+        {
+          returnOriginal: false
+        },
+        options
+      )
+    );
   }
 
   /**
@@ -217,12 +241,11 @@ class GenericCrudService {
    * @param {boolean} [options.returnOriginal=false]:
    * @returns {Object}
    */
-  async patch(_id, data, options = {}) {
+  async patch(query, data, options = {}) {
     this.verifyConnection();
-    _id = this.verifyId(_id);
     data[this.modificationDateField] = new Date();
     return await this.update(
-      _id,
+      query,
       {
         $set: data
       },
@@ -231,19 +254,47 @@ class GenericCrudService {
   }
 
   /**
-   * Deletes a document
+   * Alias for patch but with id
+   *
+   * Options: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {Object} data: The data to be updated
+   * @param {Object} [options={}]:
+   * @param {boolean} [options.returnOriginal=false]:
+   * @returns {Object}
+   */
+  async patchById(_id, data, options = {}) {
+    this.verifyConnection();
+    _id = this.verifyId(_id);
+    return await this.patch({ _id }, data, options);
+  }
+
+  /**
+   * Deletes documents
    *
    * @param {ObjectId|String} _id: The MongoDB Id of the requested document
    * @param {Object} [options={}]:
    */
-  async remove(_id, options = {}) {
+  async remove(query, options = {}) {
     this.verifyConnection();
-    _id = this.verifyId(_id);
     const response = await this.collection.findOneAndDelete(
-      { _id },
+      query,
       Object.assign({}, options)
     );
     return response.value;
+  }
+
+  /**
+   * Alias for remove method with an _id lookup
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {Object} [options={}]:
+   */
+  async removeById(_id, options = {}) {
+    this.verifyConnection();
+    _id = this.verifyId(_id);
+    return await this.remove({ _id }, options);
   }
 
   /**
@@ -335,11 +386,47 @@ class GenericCrudService {
     if (data === Object(data)) {
       data["_id"] = new ObjectId();
     }
-    return await this.update(
+    return await this.updateById(
       _id,
       { $push: { [embeddedField]: data } },
       Object.assign({}, options)
     );
+  }
+
+  /**
+   * Partially updates a sub documenty
+   *
+   * Options: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {String} embeddedField: The name of the subdocument array field
+   * @param {Object} query: The query used to search for the subdocument to be pulled
+   * @param {Object} data: The data to be updated
+   * @param {Object} [options={}]:
+   * @returns {Object}
+   */
+  async patchSubdocument(_id, embeddedField, query, data, options = {}) {
+    _id = this.verifyId(_id);
+
+    for (const key in query) {
+      if (query.hasOwnProperty(key)) {
+        if (!key.startsWith(`${embeddedField}.`)) {
+          query[`${embeddedField}.${key}`] = query[key];
+          delete query[key];
+        }
+      }
+    }
+
+    for (const key in data) {
+      if (data.hasOwnProperty(key)) {
+        if (!key.startsWith(`${embeddedField}.$.`)) {
+          data[`${embeddedField}.$.${key}`] = data[key];
+          delete data[key];
+        }
+      }
+    }
+    query["_id"] = _id;
+    return await this.patch(query, data, options);
   }
 
   /**
@@ -358,7 +445,7 @@ class GenericCrudService {
     assert(_id, "The '_id' parameter is required");
     assert(embeddedField, "The 'embeddedField' parameter is required");
     assert(query, "The 'query' parameter is required");
-    return await this.update(
+    return await this.updateById(
       _id,
       { $pull: { [embeddedField]: query } },
       Object.assign({}, options)

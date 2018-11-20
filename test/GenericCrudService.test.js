@@ -324,21 +324,27 @@ describe("GenericCrudService", () => {
       });
 
       it("should return null if the object is not found", async () => {
-        const object = await service.update(invalidId, {
-          $unset: {
-            name: ""
+        const object = await service.update(
+          { _id: invalidId },
+          {
+            $unset: {
+              name: ""
+            }
           }
-        });
+        );
         expect(object).to.be.null;
       });
 
       it("should unset the name property", async () => {
         const originalObject = await service.get(validId);
-        const object = await service.update(validId, {
-          $unset: {
-            name: ""
+        const object = await service.update(
+          { _id: validId },
+          {
+            $unset: {
+              name: ""
+            }
           }
-        });
+        );
         originalObject.should.haveOwnProperty("name");
         object.should.not.haveOwnProperty("name");
       });
@@ -363,18 +369,24 @@ describe("GenericCrudService", () => {
       });
 
       it("should return null if the object is not found", async () => {
-        const object = await service.patch(invalidId, {
-          type: "ugly"
-        });
+        const object = await service.patch(
+          { _id: invalidId },
+          {
+            type: "ugly"
+          }
+        );
         expect(object).to.be.null;
       });
 
       it("should set only one field of the object", async () => {
         const originalObject = await service.get(validId);
         originalObject.should.not.haveOwnProperty("type");
-        const object = await service.patch(validId, {
-          type: "ugly"
-        });
+        const object = await service.patch(
+          { _id: validId },
+          {
+            type: "ugly"
+          }
+        );
         object.should.haveOwnProperty("type");
         object.should.haveOwnProperty(service.modificationDateField);
         object._id.should.be.eql(originalObject._id);
@@ -391,9 +403,12 @@ describe("GenericCrudService", () => {
           collectionName
         );
         try {
-          await service.remove(validId, {
-            name: "foo"
-          });
+          await service.remove(
+            { _id: validId },
+            {
+              name: "foo"
+            }
+          );
           false.should.be.eql(true, "The function should NOT HAVE passed");
         } catch (error) {
           error.should.be.instanceof(ClientNotConnected);
@@ -401,7 +416,7 @@ describe("GenericCrudService", () => {
       });
 
       it("should return null if the object is not found", async () => {
-        const object = await service.remove(invalidId);
+        const object = await service.remove({ _id: invalidId });
         expect(object).to.be.null;
       });
 
@@ -565,6 +580,72 @@ describe("GenericCrudService", () => {
         object.should.haveOwnProperty(validEmbbededField);
         const newCount = object[validEmbbededField].length;
         newCount.should.be.eql(oldCount + 1);
+      });
+    });
+
+    describe("patchSubdocument", () => {
+      it("should throw an error if the client is not connected", async () => {
+        const notConnectedClient = new MongoClient(uri, clientOptions);
+        const service = new GenericCrudService(
+          notConnectedClient,
+          databaseName,
+          collectionName
+        );
+        try {
+          await service.patchSubdocument(
+            validId,
+            validEmbbededField,
+            {
+              name: "games"
+            },
+            {
+              name: "trouble"
+            }
+          );
+          false.should.be.eql(true, "The function should NOT HAVE passed");
+        } catch (error) {
+          error.should.be.instanceof(ClientNotConnected);
+        }
+      });
+
+      it("should return null if the document is not found", async () => {
+        const object = await service.patchSubdocument(
+          invalidId,
+          validEmbbededField,
+          {
+            name: "games"
+          },
+          {
+            name: "trouble"
+          }
+        );
+        expect(object).to.be.null;
+      });
+
+      it("should update the subdocument", async () => {
+        const subdocument = await service.getSubdocument(
+            validId,
+            validEmbbededField,
+            {
+              name: "games"
+            }
+          ),
+          object = await service.patchSubdocument(
+            validId,
+            validEmbbededField,
+            {
+              _id: new ObjectId(subdocument._id)
+            },
+            {
+              name: "trouble"
+            }
+          );
+        object.should.haveOwnProperty(validEmbbededField);
+        const newList = object[validEmbbededField],
+          newSubdoc = newList.find(
+            value => value._id.toString() == subdocument._id.toString()
+          );
+        newSubdoc.name.should.be.eql("trouble");
       });
     });
 
