@@ -5,13 +5,6 @@ const { MongoClient, ObjectId } = require("mongodb"),
 /**
  * Implements basic Crud operations for a desired collection.
  *
- * NOTE: The desired collection must be defined in a overriden static get collection method.
- *
- * Example:
- *  static get collection() {
- *    return mongodb.database.collection(collectionName);
- *  }
- *
  */
 class GenericCrudService {
   /**
@@ -243,6 +236,14 @@ class GenericCrudService {
    */
   async patch(query, data, options = {}) {
     this.verifyConnection();
+    /* As this is a patch, we clean undefined data */
+    for (const key in data) {
+      if (data.hasOwnProperty(key)) {
+        if (data[key] === undefined) {
+          delete data[key];
+        }
+      }
+    }
     data[this.modificationDateField] = new Date();
     return await this.update(
       query,
@@ -426,7 +427,6 @@ class GenericCrudService {
     query["_id"] = _id;
     return await this.patch(query, data, options);
   }
-  
 
   /**
    * Removes a subdocument from an array

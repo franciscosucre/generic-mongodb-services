@@ -314,9 +314,12 @@ describe("GenericCrudService", () => {
           collectionName
         );
         try {
-          await service.update(validId, {
-            name: "foo"
-          });
+          await service.update(
+            { _id: validId },
+            {
+              name: "foo"
+            }
+          );
           false.should.be.eql(true, "The function should NOT HAVE passed");
         } catch (error) {
           error.should.be.instanceof(ClientNotConnected);
@@ -350,6 +353,45 @@ describe("GenericCrudService", () => {
       });
     });
 
+    describe("updateById", () => {
+      it("should throw an error if the client is not connected", async () => {
+        const notConnectedClient = new MongoClient(uri, clientOptions);
+        const service = new GenericCrudService(
+          notConnectedClient,
+          databaseName,
+          collectionName
+        );
+        try {
+          await service.updateById(validId, {
+            name: "foo"
+          });
+          false.should.be.eql(true, "The function should NOT HAVE passed");
+        } catch (error) {
+          error.should.be.instanceof(ClientNotConnected);
+        }
+      });
+
+      it("should return null if the object is not found", async () => {
+        const object = await service.updateById(invalidId, {
+          $unset: {
+            name: ""
+          }
+        });
+        expect(object).to.be.null;
+      });
+
+      it("should unset the name property", async () => {
+        const originalObject = await service.get(validId);
+        const object = await service.update(validId, {
+          $unset: {
+            name: ""
+          }
+        });
+        originalObject.should.haveOwnProperty("name");
+        object.should.not.haveOwnProperty("name");
+      });
+    });
+
     describe("patch", () => {
       it("should throw an error if the client is not connected", async () => {
         const notConnectedClient = new MongoClient(uri, clientOptions);
@@ -359,9 +401,12 @@ describe("GenericCrudService", () => {
           collectionName
         );
         try {
-          await service.patch(validId, {
-            name: "foo"
-          });
+          await service.patch(
+            { _id: validId },
+            {
+              name: "foo"
+            }
+          );
           false.should.be.eql(true, "The function should NOT HAVE passed");
         } catch (error) {
           error.should.be.instanceof(ClientNotConnected);
@@ -387,6 +432,44 @@ describe("GenericCrudService", () => {
             type: "ugly"
           }
         );
+        object.should.haveOwnProperty("type");
+        object.should.haveOwnProperty(service.modificationDateField);
+        object._id.should.be.eql(originalObject._id);
+        object.name.should.be.eql(originalObject.name);
+      });
+    });
+
+    describe("patchById", () => {
+      it("should throw an error if the client is not connected", async () => {
+        const notConnectedClient = new MongoClient(uri, clientOptions);
+        const service = new GenericCrudService(
+          notConnectedClient,
+          databaseName,
+          collectionName
+        );
+        try {
+          await service.patchById(validId, {
+            name: "foo"
+          });
+          false.should.be.eql(true, "The function should NOT HAVE passed");
+        } catch (error) {
+          error.should.be.instanceof(ClientNotConnected);
+        }
+      });
+
+      it("should return null if the object is not found", async () => {
+        const object = await service.patchById(invalidId, {
+          type: "ugly"
+        });
+        expect(object).to.be.null;
+      });
+
+      it("should set only one field of the object", async () => {
+        const originalObject = await service.get(validId);
+        originalObject.should.not.haveOwnProperty("type");
+        const object = await service.patchById(validId, {
+          type: "ugly"
+        });
         object.should.haveOwnProperty("type");
         object.should.haveOwnProperty(service.modificationDateField);
         object._id.should.be.eql(originalObject._id);
@@ -422,7 +505,40 @@ describe("GenericCrudService", () => {
 
       it("should delete the document", async () => {
         const oldCount = await service.count();
-        const object = await service.remove(validId);
+        const object = await service.remove({ _id: validId });
+        object.should.haveOwnProperty("_id");
+        object.should.haveOwnProperty("name");
+        const newCount = await service.count();
+        newCount.should.be.eql(oldCount - 1);
+      });
+    });
+
+    describe("removeById", () => {
+      it("should throw an error if the client is not connected", async () => {
+        const notConnectedClient = new MongoClient(uri, clientOptions);
+        const service = new GenericCrudService(
+          notConnectedClient,
+          databaseName,
+          collectionName
+        );
+        try {
+          await service.removeById(validId, {
+            name: "foo"
+          });
+          false.should.be.eql(true, "The function should NOT HAVE passed");
+        } catch (error) {
+          error.should.be.instanceof(ClientNotConnected);
+        }
+      });
+
+      it("should return null if the object is not found", async () => {
+        const object = await service.removeById(invalidId);
+        expect(object).to.be.null;
+      });
+
+      it("should delete the document", async () => {
+        const oldCount = await service.count();
+        const object = await service.removeById(validId);
         object.should.haveOwnProperty("_id");
         object.should.haveOwnProperty("name");
         const newCount = await service.count();

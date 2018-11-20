@@ -1,5 +1,4 @@
-const GenericCrudService = require("./GenericCrudService"),
-  { ObjectId } = require("mongodb");
+const GenericCrudService = require("./GenericCrudService");
 
 /**
  * A subclass of the GenericCrudService that stores audit registers
@@ -60,22 +59,13 @@ class AuditedCrudService extends GenericCrudService {
    * @param {String} _id: The MongoDB Id of the object to be updated
    * @param {Object} data: The data to be updated
    */
-  async patch(_id, data, options = {}, user = this.ANONYMOUS) {
-    _id = this.verifyId(_id);
-    /* As this is a patch, we clean undefined data */
-    for (const key in data) {
-      if (data.hasOwnProperty(key)) {
-        if (data[key] === undefined) {
-          delete data[key];
-        }
-      }
-    }
+  async patch(query, data, options = {}, user = this.ANONYMOUS) {
     await this.verifyConnection();
-    const oldDoc = await this.collection.findOne({ _id });
+    const oldDoc = await this.collection.findOne(query);
     if (!oldDoc) {
       return;
     }
-    const newDoc = await super.patch(_id, data, options);
+    const newDoc = await super.patch(query, data, options);
     await this.auditCollection.insertOne({
       collection: this.collection.collectionName,
       operation: this.UPDATE,
@@ -92,14 +82,13 @@ class AuditedCrudService extends GenericCrudService {
    * @param {String} _id: The MongoDB Id of the object to be updated
    * @param {Object} data: The data to be updated
    */
-  async update(_id, data, options = {}, user = this.ANONYMOUS) {
-    _id = this.verifyId(_id);
+  async update(query, data, options = {}, user = this.ANONYMOUS) {
     await this.verifyConnection();
-    const oldDoc = await this.collection.findOne({ _id: _id });
+    const oldDoc = await this.collection.findOne(query);
     if (!oldDoc) {
       return;
     }
-    const newDoc = await super.update(_id, data, options);
+    const newDoc = await super.update(query, data, options);
     await this.auditCollection.insertOne({
       collection: this.collection.collectionName,
       operation: this.UPDATE,
@@ -115,9 +104,9 @@ class AuditedCrudService extends GenericCrudService {
    *
    * @param {Object} document: JSON document to be stored in MongoDB
    */
-  async remove(_id, options = {}, user = this.ANONYMOUS) {
+  async remove(query, options = {}, user = this.ANONYMOUS) {
     await this.verifyConnection();
-    const object = await super.remove(_id, options);
+    const object = await super.remove(query, options);
     await this.auditCollection.insertOne({
       collection: this.collection.collectionName,
       operation: this.REMOVE,
