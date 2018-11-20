@@ -61,6 +61,7 @@ class AuditedCrudService extends GenericCrudService {
    * @param {Object} data: The data to be updated
    */
   async patch(_id, data, options = {}, user = this.ANONYMOUS) {
+    _id = this.verifyId(_id);
     /* As this is a patch, we clean undefined data */
     for (const key in data) {
       if (data.hasOwnProperty(key)) {
@@ -70,7 +71,7 @@ class AuditedCrudService extends GenericCrudService {
       }
     }
     await this.verifyConnection();
-    const oldDoc = await this.collection.findOne({ _id: new ObjectId(_id) });
+    const oldDoc = await this.collection.findOne({ _id });
     if (!oldDoc) {
       return;
     }
@@ -92,8 +93,9 @@ class AuditedCrudService extends GenericCrudService {
    * @param {Object} data: The data to be updated
    */
   async update(_id, data, options = {}, user = this.ANONYMOUS) {
+    _id = this.verifyId(_id);
     await this.verifyConnection();
-    const oldDoc = await this.collection.findOne({ _id: new ObjectId(_id) });
+    const oldDoc = await this.collection.findOne({ _id: _id });
     if (!oldDoc) {
       return;
     }
