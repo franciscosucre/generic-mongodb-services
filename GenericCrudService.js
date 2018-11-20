@@ -38,22 +38,6 @@ class GenericCrudService {
     }
   }
 
-  get CREATE() {
-    return "CREATE";
-  }
-
-  get UPDATE() {
-    return "UPDATE";
-  }
-
-  get REMOVE() {
-    return "REMOVE";
-  }
-
-  get ANONYMOUS() {
-    return "Anonymous";
-  }
-
   get creationDateField() {
     return "createdAt";
   }
@@ -429,6 +413,28 @@ class GenericCrudService {
   }
 
   /**
+   * Partially updates a sub documenty
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {String} embeddedField: The name of the subdocument array field
+   * @param {Object} embedId: The MongoDB Id of the requested subdocument
+   * @param {Object} data: The data to be updated
+   * @param {Object} [options={}]:
+   * @returns {Object}
+   */
+  async patchSubdocumentById(_id, embeddedField, embedId, data, options = {}) {
+    assert(embedId, "The 'embedId' parameter is required");
+    embedId = this.verifyId(embedId);
+    return await this.patchSubdocument(
+      _id,
+      embeddedField,
+      { _id: embedId },
+      data,
+      options
+    );
+  }
+
+  /**
    * Removes a subdocument from an array
    *
    * Uses the $pull operator.
@@ -448,6 +454,25 @@ class GenericCrudService {
       _id,
       { $pull: { [embeddedField]: query } },
       Object.assign({}, options)
+    );
+  }
+
+  /**
+   * Alias for the removeSubdocument method
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {String} embeddedField: The name of the subdocument array field
+   * @param {Object} embedId: The MongoDB Id of the requested subdocument
+   * @param {Object} [options={}]: update options
+   */
+  async removeSubdocumentById(_id, embeddedField, embedId, options = {}) {
+    assert(embedId, "The 'embedId' parameter is required");
+    embedId = this.verifyId(embedId);
+    return await this.removeSubdocument(
+      _id,
+      embeddedField,
+      { _id: embedId },
+      options
     );
   }
 }

@@ -24,6 +24,22 @@ class AuditedCrudService extends GenericCrudService {
     this.auditCollection = null;
   }
 
+  get CREATE() {
+    return "CREATE";
+  }
+
+  get UPDATE() {
+    return "UPDATE";
+  }
+
+  get REMOVE() {
+    return "REMOVE";
+  }
+
+  get ANONYMOUS() {
+    return "Anonymous";
+  }
+
   get DEFAULT_AUDIT_COLLECTION_NAME() {
     return "audits";
   }

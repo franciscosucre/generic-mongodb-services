@@ -765,6 +765,73 @@ describe("GenericCrudService", () => {
       });
     });
 
+    describe("patchSubdocumentById", () => {
+      it("should throw an error if the client is not connected", async () => {
+        const notConnectedClient = new MongoClient(uri, clientOptions);
+        const service = new GenericCrudService(
+          notConnectedClient,
+          databaseName,
+          collectionName
+        );
+        try {
+          await service.patchSubdocumentById(
+            validId,
+            validEmbbededField,
+            invalidId,
+            {
+              name: "trouble"
+            }
+          );
+          false.should.be.eql(true, "The function should NOT HAVE passed");
+        } catch (error) {
+          error.should.be.instanceof(ClientNotConnected);
+        }
+      });
+
+      it("should return null if the document is not found", async () => {
+        const subdocument = await service.getSubdocument(
+            validId,
+            validEmbbededField,
+            {
+              name: "games"
+            }
+          ),
+          object = await service.patchSubdocumentById(
+            invalidId,
+            validEmbbededField,
+            subdocument._id,
+            {
+              name: "trouble"
+            }
+          );
+        expect(object).to.be.null;
+      });
+
+      it("should update the subdocument", async () => {
+        const subdocument = await service.getSubdocument(
+            validId,
+            validEmbbededField,
+            {
+              name: "games"
+            }
+          ),
+          object = await service.patchSubdocumentById(
+            validId,
+            validEmbbededField,
+            subdocument._id,
+            {
+              name: "trouble"
+            }
+          );
+        object.should.haveOwnProperty(validEmbbededField);
+        const newList = object[validEmbbededField],
+          newSubdoc = newList.find(
+            value => value._id.toString() == subdocument._id.toString()
+          );
+        newSubdoc.name.should.be.eql("trouble");
+      });
+    });
+
     describe("removeSubdocument", () => {
       it("should throw an error if the client is not connected", async () => {
         const notConnectedClient = new MongoClient(uri, clientOptions);
@@ -774,7 +841,7 @@ describe("GenericCrudService", () => {
           collectionName
         );
         try {
-          await service.addSubdocument(validId, validEmbbededField, {
+          await service.removeSubdocument(validId, validEmbbededField, {
             name: "games"
           });
           false.should.be.eql(true, "The function should NOT HAVE passed");
@@ -784,7 +851,7 @@ describe("GenericCrudService", () => {
       });
 
       it("should return null if the document is not found", async () => {
-        const object = await service.addSubdocument(
+        const object = await service.removeSubdocument(
           invalidId,
           validEmbbededField,
           {
@@ -803,6 +870,56 @@ describe("GenericCrudService", () => {
             {
               name: "games"
             }
+          );
+        object.should.haveOwnProperty(validEmbbededField);
+        const newCount = object[validEmbbededField].length;
+        newCount.should.be.eql(oldCount - 1);
+      });
+    });
+
+    describe("removeSubdocumentById", () => {
+      it("should throw an error if the client is not connected", async () => {
+        const notConnectedClient = new MongoClient(uri, clientOptions);
+        const service = new GenericCrudService(
+          notConnectedClient,
+          databaseName,
+          collectionName
+        );
+        try {
+          await service.removeSubdocumentById(
+            validId,
+            validEmbbededField,
+            invalidId
+          );
+          false.should.be.eql(true, "The function should NOT HAVE passed");
+        } catch (error) {
+          error.should.be.instanceof(ClientNotConnected);
+        }
+      });
+
+      it("should return null if the document is not found", async () => {
+        const object = await service.removeSubdocumentById(
+          invalidId,
+          validEmbbededField,
+          invalidId
+        );
+        expect(object).to.be.null;
+      });
+
+      it("should remove the subdocument", async () => {
+        const oldObject = await service.getById(validId),
+          subdocument = await service.getSubdocument(
+            validId,
+            validEmbbededField,
+            {
+              name: "games"
+            }
+          ),
+          oldCount = oldObject[validEmbbededField].length,
+          object = await service.removeSubdocumentById(
+            validId,
+            validEmbbededField,
+            subdocument._id
           );
         object.should.haveOwnProperty(validEmbbededField);
         const newCount = object[validEmbbededField].length;

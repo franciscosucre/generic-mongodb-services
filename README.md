@@ -280,10 +280,22 @@ Adds a new subdocument to a subdocument array field. It accepts both primitives 
 #### Example:
 
 ```javascript
-const object = await service.addSubdocument(
+const object = await service.patchSubdocument(
   validId,
   validEmbbededField,
-  validSubdocument
+  { name: "foo" },
+  {
+    name: "trouble"
+  }
+);
+
+const object1 = await service.patchSubdocumentById(
+  validId,
+  validEmbbededField,
+  subdocument._id,
+  {
+    name: "trouble"
+  }
 );
 ```
 
@@ -306,6 +318,12 @@ Removes a subdocument from a subdocument array field. Uses the [\$pull](https://
 const object = await service.removeSubdocument(validId, validEmbbededField, {
   name: "games"
 });
+
+const object1 = await service.removeSubdocumentById(
+  validId,
+  validEmbbededField,
+  subdocument._id
+);
 ```
 
 ## **Usage**

@@ -237,6 +237,39 @@ describe("AuditedCrudService.test", () => {
       });
     });
 
+    describe("patchSubdocumentById", () => {
+      it("should create an UPDATE audit", async () => {
+        const subdocument = await service.getSubdocument(
+            validId,
+            validEmbbededField,
+            {
+              name: "games"
+            }
+          ),
+          object = await service.patchSubdocumentById(
+            validId,
+            validEmbbededField,
+            subdocument._id,
+            {
+              name: "trouble"
+            }
+          ),
+          audits = await auditService.list(),
+          [audit] = audits,
+          findGames = v => v.name === "games",
+          findTrouble = v => v.name === "trouble",
+          oldList = audit.old[validEmbbededField],
+          newList = audit.new[validEmbbededField],
+          oldGameCount = oldList.filter(findGames).length,
+          oldTroubleCount = oldList.filter(findTrouble).length,
+          newGameCount = newList.filter(findGames).length,
+          newTroubleCount = newList.filter(findTrouble).length;
+        audit.operation.should.be.eql(service.UPDATE);
+        newGameCount.should.be.eql(oldGameCount - 1);
+        newTroubleCount.should.be.eql(oldTroubleCount + 1);
+      });
+    });
+
     describe("removeSubdocument", () => {
       it("should create an UPDATE audit", async () => {
         const object = await service.removeSubdocument(
@@ -245,6 +278,32 @@ describe("AuditedCrudService.test", () => {
             {
               name: "games"
             }
+          ),
+          audits = await auditService.list(),
+          [audit] = audits;
+        audit.operation.should.be.eql(service.UPDATE);
+        audit.old[validEmbbededField].length.should.be.eql(
+          object[validEmbbededField].length + 1
+        );
+        audit.new[validEmbbededField].length.should.be.eql(
+          object[validEmbbededField].length
+        );
+      });
+    });
+
+    describe("removeSubdocumentById", () => {
+      it("should create an UPDATE audit", async () => {
+        const subdocument = await service.getSubdocument(
+            validId,
+            validEmbbededField,
+            {
+              name: "games"
+            }
+          ),
+          object = await service.removeSubdocumentById(
+            validId,
+            validEmbbededField,
+            subdocument._id
           ),
           audits = await auditService.list(),
           [audit] = audits;
