@@ -12,7 +12,11 @@ const chai = require("chai"),
     useNewUrlParser: true
   },
   client = new MongoClient(uri, clientOptions),
-  validId = new ObjectId("5be1c07f21fd86540546eb53");
+  validId = new ObjectId("5be1c07f21fd86540546eb53"),
+  validEmbbededField = "likes",
+  validSubdocument = {
+    name: "snakes"
+  };
 chai.should();
 
 let database,
@@ -183,6 +187,74 @@ describe("AuditedCrudService.test", () => {
         audit.operation.should.be.eql(service.REMOVE);
         audit.old.should.be.eql(object);
         audit.should.not.haveOwnProperty("new");
+      });
+    });
+
+    describe("addSubdocument", () => {
+      it("should create an UPDATE audit", async () => {
+        const object = await service.addSubdocument(
+            validId,
+            validEmbbededField,
+            validSubdocument
+          ),
+          audits = await auditService.list(),
+          [audit] = audits;
+        audit.operation.should.be.eql(service.UPDATE);
+        audit.old[validEmbbededField].length.should.be.eql(
+          object[validEmbbededField].length - 1
+        );
+        audit.new[validEmbbededField].length.should.be.eql(
+          object[validEmbbededField].length
+        );
+      });
+    });
+
+    describe("patchSubdocument", () => {
+      it("should create an UPDATE audit", async () => {
+        const object = await service.patchSubdocument(
+            validId,
+            validEmbbededField,
+            {
+              name: "games"
+            },
+            {
+              name: "trouble"
+            }
+          ),
+          audits = await auditService.list(),
+          [audit] = audits,
+          findGames = v => v.name === "games",
+          findTrouble = v => v.name === "trouble",
+          oldList = audit.old[validEmbbededField],
+          newList = audit.new[validEmbbededField],
+          oldGameCount = oldList.filter(findGames).length,
+          oldTroubleCount = oldList.filter(findTrouble).length,
+          newGameCount = newList.filter(findGames).length,
+          newTroubleCount = newList.filter(findTrouble).length;
+        audit.operation.should.be.eql(service.UPDATE);
+        newGameCount.should.be.eql(oldGameCount - 1);
+        newTroubleCount.should.be.eql(oldTroubleCount + 1);
+      });
+    });
+
+    describe("removeSubdocument", () => {
+      it("should create an UPDATE audit", async () => {
+        const object = await service.removeSubdocument(
+            validId,
+            validEmbbededField,
+            {
+              name: "games"
+            }
+          ),
+          audits = await auditService.list(),
+          [audit] = audits;
+        audit.operation.should.be.eql(service.UPDATE);
+        audit.old[validEmbbededField].length.should.be.eql(
+          object[validEmbbededField].length + 1
+        );
+        audit.new[validEmbbededField].length.should.be.eql(
+          object[validEmbbededField].length
+        );
       });
     });
   });
