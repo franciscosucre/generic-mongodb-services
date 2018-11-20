@@ -396,8 +396,6 @@ class GenericCrudService {
   /**
    * Partially updates a sub documenty
    *
-   * Options: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate
-   *
    * @param {ObjectId|String} _id: The MongoDB Id of the requested document
    * @param {String} embeddedField: The name of the subdocument array field
    * @param {Object} query: The query used to search for the subdocument to be pulled
