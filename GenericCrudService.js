@@ -167,7 +167,7 @@ class GenericCrudService {
   /**
    * Obtains the document with the given _id
    *
-   * @param {ObjectId|String} _id: The MongoDB Id of the requested object
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
    * @param {Object} projection: Used for projection. Defines which fields of the objects must be returned. Useful for optimizing queries.
    */
   async getById(_id, projection = {}) {
@@ -181,7 +181,7 @@ class GenericCrudService {
    *
    * Options: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate
    *
-   * @param {ObjectId|String} _id: The MongoDB Id of the requested object
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
    * @param {Object} update: MongoDB update operations
    * @param {Object} [options={}]:
    * @param {boolean} [options.returnOriginal=false]:
@@ -211,7 +211,7 @@ class GenericCrudService {
    *
    * Options: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate
    *
-   * @param {ObjectId|String} _id: The MongoDB Id of the requested object
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
    * @param {Object} data: The data to be updated
    * @param {Object} [options={}]:
    * @param {boolean} [options.returnOriginal=false]:
@@ -233,7 +233,7 @@ class GenericCrudService {
   /**
    * Deletes a document
    *
-   * @param {ObjectId|String} _id: The MongoDB Id of the requested object
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
    * @param {Object} [options={}]:
    */
   async remove(_id, options = {}) {
@@ -244,6 +244,44 @@ class GenericCrudService {
       Object.assign({}, options)
     );
     return response.value;
+  }
+
+  /**
+   * Obtains a list of subdocuments. Can be filtered using the $filter aggregation pipeline.
+   *
+   * https://docs.mongodb.com/manual/reference/operator/aggregation/filter/
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {String} embeddedField: The name of the subdocument array field
+   * @param {String} as: alias used by $filter for each element of the list, used to interpret the filter
+   * @param {Object} query: Filters applied to the $filter aggregation
+   */
+  async listSubdocuments(_id, embeddedField, as = "item", query = {}) {
+    this.verifyConnection();
+    _id = this.verifyId(_id);
+    const objects = await this.collection
+      .aggregate([
+        { $match: { _id } },
+        {
+          $project: {
+            [embeddedField]: {
+              $filter: {
+                input: `$${embeddedField}`,
+                as: as,
+                cond: query
+              }
+            }
+          }
+        }
+      ])
+      .toArray();
+    const [object] = objects;
+    if (!objects) {
+      return;
+    }
+    return object && object[embeddedField].length > 0
+      ? object[embeddedField]
+      : null;
   }
 
   /**

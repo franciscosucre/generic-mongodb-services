@@ -98,7 +98,7 @@ Obtains the document with the given \_id.
 
 #### Params:
 
-- **{ObjectId|String} \_id:** The MongoDB Id of the requested object
+- **{ObjectId|String} \_id:** The MongoDB Id of the requested document
 - **{Object} projection:** Used for projection. Defines which fields of the objects must be returned. Useful for optimizing queries.
 
 #### Example:
@@ -113,7 +113,7 @@ Generic update service for all MongoDB Operators.
 
 #### Params:
 
-- **{ObjectId|String} \_id:** The MongoDB Id of the requested object
+- **{ObjectId|String} \_id:** The MongoDB Id of the requested document
 - **{Object} update:** MongoDB update operations objects. Useful for optimizing queries.
 - **{Object} [options={}]:** [MongoDB Options](http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate)
 
@@ -133,7 +133,7 @@ Partially updates a document. It only sets the sent fields. Uses the [\$set](htt
 
 #### Params:
 
-- **{ObjectId|String} \_id:** The MongoDB Id of the requested object
+- **{ObjectId|String} \_id:** The MongoDB Id of the requested document
 - **{Object} data:** The data to be updated.
 - **{Object} [options={}]:** [MongoDB Options](http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate)
 
@@ -151,7 +151,7 @@ Deletes a document.
 
 #### Params:
 
-- **{ObjectId|String} \_id:** The MongoDB Id of the requested object
+- **{ObjectId|String} \_id:** The MongoDB Id of the requested document
 - **{Object} [options={}]:** [MongoDB Options](http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndDelete)
 
 #### Example:
@@ -160,13 +160,35 @@ Deletes a document.
 const object = await service.remove(validId);
 ```
 
+### **listSubdocuments(\_id, embeddedField, as = "item", query = {})**
+
+Obtains a list of subdocuments. Can be filtered using the [\$filter aggregation pipeline](https://docs.mongodb.com/manual/reference/operator/aggregation/filter/).
+
+#### Params:
+
+- **{ObjectId|String} \_id:** The MongoDB Id of the requested document
+- **{String} embeddedField:** The name of the subdocument array field
+- **{String} as:** alias used by \$filter for each element of the list, used to interpret the filter
+- **{Object} query:** Filters applied to the \$filter aggregation
+
+#### Example:
+
+```javascript
+const objects = await service.listSubdocuments(
+  validId,
+  validEmbbededField,
+  "like",
+  { $eq: ["$$like.name", "games"] }
+);
+```
+
 ### **getSubdocument(\_id, embeddedField, query, projection = {})**
 
 Obtains a single subdocument of a requested document. If many subdocuments match the query, only the first one will be returned. It uses the [\$elemMatch](https://docs.mongodb.com/manual/reference/operator/query/elemMatch/) operator
 
 #### Params:
 
-- **{ObjectId|String} \_id:** The MongoDB Id of the requested object
+- **{ObjectId|String} \_id:** The MongoDB Id of the requested document
 - **{String} embeddedField:** The name of the subdocument array field
 - **{Object} query:** The query used to search for the subdocument to be pulled
 - **{Object} [projection={}]:** MongoDB projection object
@@ -185,7 +207,7 @@ Adds a new subdocument to a subdocument array field. It accepts both primitives 
 
 #### Params:
 
-- **{ObjectId|String} \_id:** The MongoDB Id of the requested object
+- **{ObjectId|String} \_id:** The MongoDB Id of the requested document
 - **{String} embeddedField:** The name of the subdocument array field
 - **{Object} data:** The data to be added to the subdocument array field
 - **{Object} [options={}]:** [MongoDB Options](http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate)
@@ -206,7 +228,7 @@ Removes a subdocument from a subdocument array field. Uses the [\$pull](https://
 
 #### Params:
 
-- **{ObjectId|String} \_id:** The MongoDB Id of the requested object
+- **{ObjectId|String} \_id:** The MongoDB Id of the requested document
 - **{String} embeddedField:** The name of the subdocument array field
 - **{Object} query:** The query used to search for the desired document
 - **{Object} [options={}]:** [MongoDB Options](http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate)

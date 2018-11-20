@@ -415,6 +415,49 @@ describe("GenericCrudService", () => {
       });
     });
 
+    describe("listSubdocuments", () => {
+      it("should throw an error if the client is not connected", async () => {
+        const notConnectedClient = new MongoClient(uri, clientOptions);
+        const service = new GenericCrudService(
+          notConnectedClient,
+          databaseName,
+          collectionName
+        );
+        try {
+          await service.listSubdocuments(validId, validEmbbededField);
+          false.should.be.eql(true, "The function should NOT HAVE passed");
+        } catch (error) {
+          error.should.be.instanceof(ClientNotConnected);
+        }
+      });
+
+      it("should return null if the document is not found", async () => {
+        const objects = await service.listSubdocuments(
+          invalidId,
+          validEmbbededField
+        );
+        expect(objects).to.be.null;
+      });
+
+      it("should get all the subdocuments", async () => {
+        const objects = await service.listSubdocuments(
+          validId,
+          validEmbbededField
+        );
+        objects.length.should.be.eql(3);
+      });
+
+      it("should get some filtered subdocuments", async () => {
+        const objects = await service.listSubdocuments(
+          validId,
+          validEmbbededField,
+          "like",
+          { $eq: ["$$like.name", "games"] }
+        );
+        objects.length.should.be.eql(1);
+      });
+    });
+
     describe("getSubdocument", () => {
       it("should throw an error if the client is not connected", async () => {
         const notConnectedClient = new MongoClient(uri, clientOptions);
