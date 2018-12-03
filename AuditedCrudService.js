@@ -1,4 +1,6 @@
-const GenericCrudService = require("./GenericCrudService");
+const GenericCrudService = require("./GenericCrudService"),
+  assert = require("assert"),
+  { ObjectId } = require("mongodb");
 
 /**
  * A subclass of the GenericCrudService that stores audit registers
@@ -185,6 +187,129 @@ class AuditedCrudService extends GenericCrudService {
     this.verifyConnection();
     _id = this.verifyId(_id);
     return await this.remove({ _id }, options, user);
+  }
+
+  async addSubdocument(_id, embeddedField, data, options = {}, user) {
+    assert(_id, "The '_id' parameter is required");
+    assert(embeddedField, "The 'embeddedField' parameter is required");
+    assert(data, "The 'data' parameter is required");
+    if (data === Object(data)) {
+      data["_id"] = new ObjectId();
+    }
+    return await this.updateById(
+      _id,
+      { $push: { [embeddedField]: data } },
+      Object.assign({}, options),
+      user
+    );
+  }
+
+  /**
+   * Partially updates a sub documenty
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {String} embeddedField: The name of the subdocument array field
+   * @param {Object} query: The query used to search for the subdocument to be pulled
+   * @param {Object} data: The data to be updated
+   * @param {Object} [options={}]:
+   * @returns {Object}
+   */
+  async patchSubdocument(_id, embeddedField, query, data, options = {}, user) {
+    _id = this.verifyId(_id);
+
+    for (const key in query) {
+      if (query.hasOwnProperty(key)) {
+        if (!key.startsWith(`${embeddedField}.`)) {
+          query[`${embeddedField}.${key}`] = query[key];
+          delete query[key];
+        }
+      }
+    }
+
+    for (const key in data) {
+      if (data.hasOwnProperty(key)) {
+        if (!key.startsWith(`${embeddedField}.$.`)) {
+          data[`${embeddedField}.$.${key}`] = data[key];
+          delete data[key];
+        }
+      }
+    }
+    query["_id"] = _id;
+    return await this.patch(query, data, options, user);
+  }
+
+  /**
+   * Partially updates a sub documenty
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {String} embeddedField: The name of the subdocument array field
+   * @param {Object} embedId: The MongoDB Id of the requested subdocument
+   * @param {Object} data: The data to be updated
+   * @param {Object} [options={}]:
+   * @returns {Object}
+   */
+  async patchSubdocumentById(
+    _id,
+    embeddedField,
+    embedId,
+    data,
+    options = {},
+    user
+  ) {
+    assert(embedId, "The 'embedId' parameter is required");
+    embedId = this.verifyId(embedId);
+    return await this.patchSubdocument(
+      _id,
+      embeddedField,
+      { _id: embedId },
+      data,
+      options,
+      user
+    );
+  }
+
+  /**
+   * Removes a subdocument from an array
+   *
+   * Uses the $pull operator.
+   *
+   * https://docs.mongodb.com/manual/reference/operator/update/pull/
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {String} embeddedField: The name of the subdocument array field
+   * @param {Object} query: The query used to search for the subdocument to be pulled
+   * @param {Object} [options={}]: update options
+   */
+  async removeSubdocument(_id, embeddedField, query, options = {}, user) {
+    assert(_id, "The '_id' parameter is required");
+    assert(embeddedField, "The 'embeddedField' parameter is required");
+    assert(query, "The 'query' parameter is required");
+    return await this.updateById(
+      _id,
+      { $pull: { [embeddedField]: query } },
+      Object.assign({}, options),
+      user
+    );
+  }
+
+  /**
+   * Alias for the removeSubdocument method
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {String} embeddedField: The name of the subdocument array field
+   * @param {Object} embedId: The MongoDB Id of the requested subdocument
+   * @param {Object} [options={}]: update options
+   */
+  async removeSubdocumentById(_id, embeddedField, embedId, options = {}, user) {
+    assert(embedId, "The 'embedId' parameter is required");
+    embedId = this.verifyId(embedId);
+    return await this.removeSubdocument(
+      _id,
+      embeddedField,
+      { _id: embedId },
+      options,
+      user
+    );
   }
 }
 
