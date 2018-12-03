@@ -93,6 +93,23 @@ class AuditedCrudService extends GenericCrudService {
   }
 
   /**
+   * Alias for patch but with id
+   *
+   * Options: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {Object} data: The data to be updated
+   * @param {Object} [options={}]:
+   * @param {boolean} [options.returnOriginal=false]:
+   * @returns {Object}
+   */
+  async patchById(_id, data, options = {}, user = this.ANONYMOUS) {
+    this.verifyConnection();
+    _id = this.verifyId(_id);
+    return await this.patch({ _id }, data, options, user);
+  }
+
+  /**
    * Fully updates a document. It only sets the sent fields.
    *
    * @param {String} _id: The MongoDB Id of the object to be updated
@@ -116,6 +133,32 @@ class AuditedCrudService extends GenericCrudService {
   }
 
   /**
+   * Alias for update but with Id
+   *
+   * Options: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#findOneAndUpdate
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {Object} update: MongoDB update operations
+   * @param {Object} [options={}]:
+   * @param {boolean} [options.returnOriginal=false]:
+   */
+  async updateById(_id, update, options = {}, user = this.ANONYMOUS) {
+    this.verifyConnection();
+    _id = this.verifyId(_id);
+    return await this.update(
+      { _id },
+      update,
+      Object.assign(
+        {
+          returnOriginal: false
+        },
+        options
+      ),
+      user
+    );
+  }
+
+  /**
    * Soft deletes a document
    *
    * @param {Object} document: JSON document to be stored in MongoDB
@@ -130,6 +173,18 @@ class AuditedCrudService extends GenericCrudService {
       user
     });
     return object;
+  }
+
+  /**
+   * Alias for remove method with an _id lookup
+   *
+   * @param {ObjectId|String} _id: The MongoDB Id of the requested document
+   * @param {Object} [options={}]:
+   */
+  async removeById(_id, options = {}, user = this.ANONYMOUS) {
+    this.verifyConnection();
+    _id = this.verifyId(_id);
+    return await this.remove({ _id }, options, user);
   }
 }
 
