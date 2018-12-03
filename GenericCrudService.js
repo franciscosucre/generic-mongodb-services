@@ -229,13 +229,19 @@ class GenericCrudService {
       }
     }
     data[this.modificationDateField] = new Date();
-    return await this.update(
+    const response = await this.collection.findOneAndUpdate(
       query,
       {
         $set: data
       },
-      Object.assign({}, options)
+      Object.assign(
+        {
+          returnOriginal: false
+        },
+        options
+      )
     );
+    return response.value;
   }
 
   /**
