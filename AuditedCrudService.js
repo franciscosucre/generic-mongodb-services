@@ -107,7 +107,7 @@ class AuditedCrudService extends GenericCrudService {
    */
   async patchById(_id, data, options = {}, user = this.ANONYMOUS) {
     this.verifyConnection();
-    _id = this.verifyId(_id);
+    _id = this.generateObjectId(_id);
     return await this.patch({ _id }, data, options, user);
   }
 
@@ -146,7 +146,7 @@ class AuditedCrudService extends GenericCrudService {
    */
   async updateById(_id, update, options = {}, user = this.ANONYMOUS) {
     this.verifyConnection();
-    _id = this.verifyId(_id);
+    _id = this.generateObjectId(_id);
     return await this.update(
       { _id },
       update,
@@ -185,7 +185,7 @@ class AuditedCrudService extends GenericCrudService {
    */
   async removeById(_id, options = {}, user = this.ANONYMOUS) {
     this.verifyConnection();
-    _id = this.verifyId(_id);
+    _id = this.generateObjectId(_id);
     return await this.remove({ _id }, options, user);
   }
 
@@ -215,7 +215,7 @@ class AuditedCrudService extends GenericCrudService {
    * @returns {Object}
    */
   async patchSubdocument(_id, embeddedField, query, data, options = {}, user) {
-    _id = this.verifyId(_id);
+    _id = this.generateObjectId(_id);
 
     for (const key in query) {
       if (query.hasOwnProperty(key)) {
@@ -257,7 +257,7 @@ class AuditedCrudService extends GenericCrudService {
     user
   ) {
     assert(embedId, "The 'embedId' parameter is required");
-    embedId = this.verifyId(embedId);
+    embedId = this.generateObjectId(embedId);
     return await this.patchSubdocument(
       _id,
       embeddedField,
@@ -302,7 +302,7 @@ class AuditedCrudService extends GenericCrudService {
    */
   async removeSubdocumentById(_id, embeddedField, embedId, options = {}, user) {
     assert(embedId, "The 'embedId' parameter is required");
-    embedId = this.verifyId(embedId);
+    embedId = this.generateObjectId(embedId);
     return await this.removeSubdocument(
       _id,
       embeddedField,

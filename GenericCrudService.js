@@ -62,11 +62,41 @@ class GenericCrudService {
     }
   }
 
+  /**
+   * Alias for the generateObjectId method.
+   * 
+   * Soon to be deprecated
+   * 
+   * @param {ObjectId|String} _id: The mongodb id string or object
+   */
   verifyId(_id) {
     if (!(_id instanceof ObjectId)) {
       _id = new ObjectId(_id);
     }
     return _id;
+  }
+
+  /**
+   * Generates a mongodb ObjectId. If an argument is passed then
+   * it is used for generating it.
+   *
+   * @param {ObjectId|String} _id: The mongodb id string or object
+   */
+  generateObjectId(_id) {
+    if (!_id) {
+      return new ObjectId();
+    } else if (!(_id instanceof ObjectId)) {
+      return new ObjectId(_id);
+    }
+    return _id;
+  }
+
+  /**
+    Encapsulates the logic of generating timestmaps, the reasoning behind this
+    is to have an easy way of overriding the timestamp format
+   */
+  _generate_timestamp() {
+    return new Date();
   }
 
   /**
@@ -125,7 +155,7 @@ class GenericCrudService {
    */
   async create(document) {
     this.verifyConnection();
-    document[this.creationDateField] = new Date();
+    document[this.creationDateField] = this._generate_timestamp();
     const response = await this.collection.insertOne(document);
     return response.ops[0];
   }
@@ -149,7 +179,7 @@ class GenericCrudService {
    */
   async getById(_id, projection = {}) {
     this.verifyConnection();
-    _id = this.verifyId(_id);
+    _id = this.generateObjectId(_id);
     return await this.collection.findOne({ _id }, { projection });
   }
 
@@ -168,7 +198,7 @@ class GenericCrudService {
     if (!update.$set) {
       update.$set = {};
     }
-    update.$set[this.modificationDateField] = new Date();
+    update.$set[this.modificationDateField] = this._generate_timestamp();
     const response = await this.collection.findOneAndUpdate(
       query,
       update,
@@ -194,7 +224,7 @@ class GenericCrudService {
    */
   async updateById(_id, update, options = {}) {
     this.verifyConnection();
-    _id = this.verifyId(_id);
+    _id = this.generateObjectId(_id);
     return await this.update(
       { _id },
       update,
@@ -228,7 +258,7 @@ class GenericCrudService {
         }
       }
     }
-    data[this.modificationDateField] = new Date();
+    data[this.modificationDateField] = this._generate_timestamp();
     const response = await this.collection.findOneAndUpdate(
       query,
       {
@@ -257,7 +287,7 @@ class GenericCrudService {
    */
   async patchById(_id, data, options = {}) {
     this.verifyConnection();
-    _id = this.verifyId(_id);
+    _id = this.generateObjectId(_id);
     return await this.patch({ _id }, data, options);
   }
 
@@ -284,7 +314,7 @@ class GenericCrudService {
    */
   async removeById(_id, options = {}) {
     this.verifyConnection();
-    _id = this.verifyId(_id);
+    _id = this.generateObjectId(_id);
     return await this.remove({ _id }, options);
   }
 
@@ -300,7 +330,7 @@ class GenericCrudService {
    */
   async listSubdocuments(_id, embeddedField, as = "item", query = {}) {
     this.verifyConnection();
-    _id = this.verifyId(_id);
+    _id = this.generateObjectId(_id);
     const objects = await this.collection
       .aggregate([
         { $match: { _id } },
@@ -340,7 +370,7 @@ class GenericCrudService {
    * @param {Object} [projection={}]: MongoDB projection object
    */
   async getSubdocument(_id, embeddedField, query, projection = {}) {
-    _id = this.verifyId(_id);
+    _id = this.generateObjectId(_id);
     const object = await this.get(
       {
         _id,
@@ -395,7 +425,7 @@ class GenericCrudService {
    * @returns {Object}
    */
   async patchSubdocument(_id, embeddedField, query, data, options = {}) {
-    _id = this.verifyId(_id);
+    _id = this.generateObjectId(_id);
 
     for (const key in query) {
       if (query.hasOwnProperty(key)) {
@@ -430,7 +460,7 @@ class GenericCrudService {
    */
   async patchSubdocumentById(_id, embeddedField, embedId, data, options = {}) {
     assert(embedId, "The 'embedId' parameter is required");
-    embedId = this.verifyId(embedId);
+    embedId = this.generateObjectId(embedId);
     return await this.patchSubdocument(
       _id,
       embeddedField,
@@ -473,7 +503,7 @@ class GenericCrudService {
    */
   async removeSubdocumentById(_id, embeddedField, embedId, options = {}) {
     assert(embedId, "The 'embedId' parameter is required");
-    embedId = this.verifyId(embedId);
+    embedId = this.generateObjectId(embedId);
     return await this.removeSubdocument(
       _id,
       embeddedField,
