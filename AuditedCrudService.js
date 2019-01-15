@@ -53,6 +53,10 @@ class AuditedCrudService extends GenericCrudService {
     }
   }
 
+  async _generate_audit(data) {
+    return await this.auditCollection.insertOne(data);
+  }
+
   /**
    * Creates a document and returns it
    *
@@ -62,7 +66,7 @@ class AuditedCrudService extends GenericCrudService {
   async create(document, user = this.ANONYMOUS) {
     await this.verifyConnection();
     const object = await super.create(document);
-    await this.auditCollection.insertOne({
+    await this._generate_audit({
       collection: this.collection.collectionName,
       operation: this.CREATE,
       new: object,
@@ -85,7 +89,7 @@ class AuditedCrudService extends GenericCrudService {
       return;
     }
     const newDoc = await super.patch(query, data, options);
-    await this.auditCollection.insertOne({
+    await this._generate_audit({
       collection: this.collection.collectionName,
       operation: this.UPDATE,
       old: oldDoc,
@@ -126,7 +130,7 @@ class AuditedCrudService extends GenericCrudService {
       return;
     }
     const newDoc = await super.update(query, data, options);
-    await this.auditCollection.insertOne({
+    await this._generate_audit({
       collection: this.collection.collectionName,
       operation: this.UPDATE,
       old: oldDoc,
@@ -171,7 +175,7 @@ class AuditedCrudService extends GenericCrudService {
   async remove(query, options = {}, user = this.ANONYMOUS) {
     await this.verifyConnection();
     const object = await super.remove(query, options);
-    await this.auditCollection.insertOne({
+    await this._generate_audit({
       collection: this.collection.collectionName,
       operation: this.REMOVE,
       old: object,
