@@ -66,7 +66,8 @@ class AuditedCrudService extends GenericCrudService {
       collection: this.collection.collectionName,
       operation: this.CREATE,
       new: object,
-      user: user
+      user: user,
+      timestamp: new Date()
     });
     return object;
   }
@@ -89,7 +90,8 @@ class AuditedCrudService extends GenericCrudService {
       operation: this.UPDATE,
       old: oldDoc,
       new: newDoc,
-      user
+      user,
+      timestamp: new Date()
     });
     return newDoc;
   }
@@ -129,7 +131,8 @@ class AuditedCrudService extends GenericCrudService {
       operation: this.UPDATE,
       old: oldDoc,
       new: newDoc,
-      user
+      user,
+      timestamp: new Date()
     });
     return newDoc;
   }
@@ -172,7 +175,8 @@ class AuditedCrudService extends GenericCrudService {
       collection: this.collection.collectionName,
       operation: this.REMOVE,
       old: object,
-      user
+      user,
+      timestamp: new Date()
     });
     return object;
   }
